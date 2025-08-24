@@ -1693,8 +1693,8 @@ function MainPage() {
                                 <td style={tdStyle}>{item.Port}</td>
                                 </tr>
                                 <tr>
-                                {/* <td style={tdStyle}><strong>Target</strong></td> */}
-                                <td style={tdStyle}><strong>邮件服务器</strong></td>
+                                <td style={tdStyle}><strong>Target</strong></td>
+                                {/* <td style={tdStyle}><strong>邮件服务器</strong></td> */}
                                 <td style={tdStyle}>{item.Target}</td>
                                 </tr>
                             </tbody>
