@@ -1455,6 +1455,7 @@ function MainPage() {
                                                         config: item.config,
                                                         uri: item.uri,
                                                         details: item.score_detail?.actualconnect_details || [],
+                                                        portsUsage: item.score_detail?.ports_usage || [],
                                                         rawCerts: item.cert_info?.RawCerts || [],
                                                         mech: mech,
                                                     };

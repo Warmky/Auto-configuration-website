@@ -923,6 +923,7 @@ function ConfigViewPage() {
   const [testingHost, setTestingHost] = useState(null);
 
   const [mech, setMech] = useState("");
+  const [portsUsage, setPortsUsage] = useState([]); // ✅ 新增 state
 
   const [showTlsCert, setShowTlsCert] = useState(false);
   const [selectedMode, setSelectedMode] = useState("ssl");
@@ -942,12 +943,15 @@ function ConfigViewPage() {
         setConnectDetails(data.details || []);
         setRawCerts(data.rawCerts || []);
         setMech(data.mech || ""); // ✅ 保存 mech
+        setPortsUsage(data.portsUsage || []); // ✅ 保存 portsUsage
       })
       .catch(err => {
         console.error("❌ Failed to fetch temp data:", err);
         setConfigContent("⚠️ 加载数据失败");
       });
   }, [tempId]);
+
+  const tdStyle = { padding: "6px 8px", borderBottom: "1px solid #333" };
 
 
   // // 初始化：从后端拉数据
@@ -1423,6 +1427,60 @@ function ConfigViewPage() {
             </a>
           )}
         </>
+      )}
+
+      {/* ✅ 配置信息卡片展示 */}
+      {Array.isArray(portsUsage) && portsUsage.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h4 style={{ marginBottom: "1rem" }}>🔌 配置信息概况</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+            {portsUsage.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  backgroundColor: "#7ba8c6ff",
+                  color: "#fff",
+                  padding: "1rem",
+                  borderRadius: "12px",
+                  boxShadow: "0 2px 8px rgba(85, 136, 207, 0.3)",
+                  border: "1px solid #555",
+                  minWidth: "220px",
+                  flex: "1",
+                  maxWidth: "280px",
+                }}
+              >
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr>
+                      <td style={tdStyle}><strong>协议</strong></td>
+                      <td style={tdStyle}>{item.protocol}</td>
+                    </tr>
+                    <tr>
+                      <td style={tdStyle}><strong>端口</strong></td>
+                      <td style={tdStyle}>{item.port}</td>
+                    </tr>
+                    <tr>
+                      <td style={tdStyle}><strong>主机名</strong></td>
+                      <td style={tdStyle}>{item.host}</td>
+                    </tr>
+                    <tr>
+                      <td style={tdStyle}><strong>SSL类型</strong></td>
+                      <td style={tdStyle}>{item.ssl}</td>
+                    </tr>
+                    <tr>
+                      <td style={tdStyle}><strong>用户名</strong></td>
+                      <td style={tdStyle}>你的邮件地址</td>
+                    </tr>
+                    <tr>
+                      <td style={tdStyle}><strong>密码</strong></td>
+                      <td style={tdStyle}>你的邮箱密码</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {renderConnectDetailTable()}
