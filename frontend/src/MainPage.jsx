@@ -1495,7 +1495,7 @@ function MainPage() {
                             </tbody>
                         </table>
 
-                        {(() => {
+                        {/* {(() => {
                             const configs = result.all.map(r => r.config).filter(Boolean);
                             const unique = [...new Set(configs)];
                             if (unique.length > 1) {
@@ -1506,7 +1506,108 @@ function MainPage() {
                                 );
                             }
                             return null;
+                        })()} */}
+
+                        {/* 8.29 */}
+                        {(() => {
+                            const collectPortsUsage = (allResults) => {
+                                return allResults.map(r => ({
+                                    uri: r.uri || "",
+                                    ports: Array.isArray(r?.score_detail?.ports_usage) ? r.score_detail.ports_usage : []
+                                }));
+                            };
+
+                            const allPorts = collectPortsUsage(result.all);
+                            if (allPorts.length === 0) return null;
+
+                            const keys = allPorts.map(item => ({
+                                uri: item.uri,
+                                ports: item.ports
+                            }));
+
+
+                            // 按 protocol 分组比较差异
+                            const protocolGroups = {};
+                            allPorts.forEach(item => {
+                                item.ports.forEach(p => {
+                                    if (!protocolGroups[p.protocol]) protocolGroups[p.protocol] = [];
+                                    protocolGroups[p.protocol].push({
+                                        uri: item.uri,
+                                        host: p.host,
+                                        port: p.port,
+                                        ssl: p.ssl || "未知 SSL"
+                                    });
+                                });
+                            });
+
+                            // 判断哪些 protocol 有差异
+                            const diffMap = {}; // { "IMAP": true/false, "POP3": true/false ... }
+                            for (const proto in protocolGroups) {
+                                const values = protocolGroups[proto].map(v => `${v.host}:${v.port} (${v.ssl})`);
+                                if (new Set(values).size > 1) {
+                                    diffMap[proto] = true; // 同协议但 host/port/ssl 不一致
+                                } else {
+                                    diffMap[proto] = false;
+                                }
+                            }
+
+                            // 如果某条路径有某个 protocol 而其他路径没有 → 也算差异
+                            const allProtocols = Object.keys(protocolGroups);
+                            allPorts.forEach(item => {
+                                allProtocols.forEach(proto => {
+                                    const hasProto = item.ports.some(p => p.protocol === proto);
+                                    if (!hasProto) diffMap[proto] = true;
+                                });
+                            });
+
+                            const hasDiff = Object.values(diffMap).some(v => v);
+                            if (!hasDiff) return null;
+
+                            return (
+                                <div style={{ marginTop: "10px", color: "#e74c3c", fontWeight: "bold" }}>
+                                    ⚠️ 检测到该机制下不同路径的关键字段不一致：
+                                    <div style={{ marginTop: "10px", color: "#333", fontWeight: "normal" }}>
+                                        {keys.map((item, idx) => (
+                                            <div
+                                                key={idx}
+                                                style={{
+                                                    border: "1px solid #ddd",
+                                                    borderRadius: "8px",
+                                                    padding: "10px",
+                                                    marginBottom: "10px",
+                                                    backgroundColor: "#fff"
+                                                }}
+                                            >
+                                                <div style={{ fontSize: "14px", marginBottom: "6px", fontWeight: "bold" }}>
+                                                    {item.uri || `路径 ${idx + 1}`}
+                                                </div>
+                                                <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                                                    {item.ports.map((p, i) => {
+                                                        const isDiff = diffMap[p.protocol] === true;
+                                                        return (
+                                                            <li
+                                                                key={i}
+                                                                style={{
+                                                                    marginBottom: "4px",
+                                                                    backgroundColor: isDiff ? "#fff3cd" : "transparent",
+                                                                    padding: isDiff ? "4px" : "0",
+                                                                    borderRadius: "4px"
+                                                                }}
+                                                            >
+                                                                {p.protocol} → {p.host}:{p.port} ({p.ssl || "未知 SSL"})
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
                         })()}
+
+
+
 
                         {Array.isArray(portsUsage) && portsUsage.length > 0 && (
                             <div style={{ marginTop: "2rem" }}>
