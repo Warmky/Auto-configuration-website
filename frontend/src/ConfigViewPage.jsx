@@ -904,6 +904,8 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { PeculiarCertificateViewer } from '@peculiar/certificates-viewer-react';
+import TlsAnalyzerPanel from "./TlsAnalyzerPanel";
+
 
 function ConfigViewPage() {
   const location = useLocation();
@@ -928,7 +930,10 @@ function ConfigViewPage() {
   const [showTlsCert, setShowTlsCert] = useState(false);
   const [selectedMode, setSelectedMode] = useState("ssl");
   const [rowModes, setRowModes] = useState({});
-
+  
+  const [currentHostForAnalysis, setCurrentHostForAnalysis] = useState(null);
+  const [currentPortForAnalysis, setCurrentPortForAnalysis] = useState(null);
+  const [showTlsAnalyzer, setShowTlsAnalyzer] = useState(false);
 
 
   useEffect(() => {
@@ -1507,7 +1512,7 @@ function ConfigViewPage() {
   //     </div>
   //   );
   // };
-
+  
 
   const [retestPorts, setRetestPorts] = useState({}); // Retest 对应端口
 
@@ -1639,6 +1644,52 @@ function ConfigViewPage() {
                     <p>✅ 测试成功</p>
                     <p><strong>TLS 版本：</strong>{liveResult.info?.version || "未知"}</p>
                     <p><strong>加密套件：</strong>{liveResult.info?.cipher?.join(", ") || "N/A"}</p>
+                    {/* 深度分析按钮 */}
+                    <button
+                      style={{
+                        marginTop: "1rem",
+                        backgroundColor: "#5bc889ff",
+                        color: "#fff",
+                        padding: "6px 12px",
+                        borderRadius: "4px",
+                        border: "none",
+                        cursor: "pointer",
+                        fontFamily: "Arial, sans-serif",
+                        fontWeight: "bold"
+                      }}
+                        onClick={() => {
+                        // 设置分析目标
+                        let host, port;
+
+                        const match = testingHost.match(/^[a-z]+:\/\/([^:\s]+):(\d+)/i);
+                        if (match) {
+                          host = match[1];  
+                          port = parseInt(match[2], 10);  
+                          console.log("host:", host, "port:", port);
+                        } else {
+                          console.error("Failed to parse host and port from testingHost:", testingHost);
+                        }
+
+                        setCurrentHostForAnalysis(host);
+                        setCurrentPortForAnalysis(port);
+                        setShowTlsAnalyzer(prev => !prev);
+
+                      }}
+                    >
+                      {showTlsAnalyzer ? "隐藏深度分析" : "深度分析"}
+                    </button>
+
+                    {/* 深度分析面板 */}
+                    {showTlsAnalyzer && currentHostForAnalysis && currentPortForAnalysis && (
+                      <div style={{ marginTop: "1rem" }}>
+                        <TlsAnalyzerPanel 
+                          host={currentHostForAnalysis} 
+                          port={currentPortForAnalysis} 
+                          cipherSuites={liveResult.info?.cipher || []} // 可传密码套件
+                        />
+                      </div>
+                    )}
+
                     {liveResult.info?.["tls ca"] && (
                       <>
                         <div style={{ marginTop: "1rem" }}>

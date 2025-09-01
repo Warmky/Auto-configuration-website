@@ -1,0 +1,305 @@
+import React, { useState } from "react";
+import axios from "axios";
+
+export default function TlsAnalyzerPanel({ host, port }) {
+    const [loading, setLoading] = useState(false);
+    const [analysis, setAnalysis] = useState(null);
+    const [showDebug, setShowDebug] = useState(false);
+
+    const handleDeepAnalyze = async () => {
+        setLoading(true);
+        setAnalysis(null);
+        try {
+            const res = await axios.post(
+                "http://localhost:5002/api/tls/deep-analyze",
+                { host, port },
+                { headers: { "Content-Type": "application/json" } }
+            );
+            console.log("=== TLS Analysis Result ===", res.data);  // <-- 打印整个返回对象
+            setAnalysis(res.data);
+        } catch (error) {
+            if (error.response) {
+                setAnalysis({
+                    success: false,
+                    error: error.response.data?.error || "服务端错误",
+                });
+            } else {
+                setAnalysis({ success: false, error: error.message || "网络错误" });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // const renderFindings = () => {
+    //     if (!analysis?.findings?.length) return null;
+
+    //     // 汇总 TLS 支持的版本
+    //     const supported = analysis.findings
+    //         .filter(f => f.status === "COMPLETED" && (f.accepted_cipher_suites?.length || 0) > 0)
+    //         .map(f => f.protocol.replace("_CIPHER_SUITES", "").replaceAll("_", " ").replace("TLS ", "TLS "))
+    //         .join(", ");
+
+    //     return (
+    //         <>
+    //             <p><strong>目标：</strong>{analysis.host}:{analysis.port}</p>
+    //             <p><strong>已检测到支持版本：</strong>{supported || "未检测到"}</p>
+
+    //             {analysis.findings.map((f, idx) => {
+    //                 let content = null;
+
+    //                 // TLS 密码套件
+    //                 if (f.accepted_cipher_suites?.length) {
+    //                     content = (
+    //                         <ul style={{ margin: 0, paddingLeft: 18 }}>
+    //                             {f.accepted_cipher_suites.map((s, i) => (
+    //                                 <li key={i} style={{ lineHeight: 1.6 }}>
+    //                                     {s.name}{typeof s.key_size === "number" ? ` (key_size=${s.key_size})` : ""}
+    //                                 </li>
+    //                             ))}
+    //                         </ul>
+    //                     );
+    //                 } 
+    //                 // Heartbleed
+    //                 else if (f.protocol === "HEARTBLEED" && f.vulnerable !== undefined) {
+    //                     content = (
+    //                         <div style={{ color: f.vulnerable ? "tomato" : "#5bc889" }}>
+    //                             {f.vulnerable ? "存在 Heartbleed 漏洞" : "未检测到 Heartbleed 漏洞"}
+    //                         </div>
+    //                     );
+    //                 }
+
+    //                 // ROBOT
+    //                 else if (f.protocol === "ROBOT" && f.result) {
+    //                     content = (
+    //                         <div style={{ color: f.result.includes("NOT_VULNERABLE") ? "#5bc889" : "tomato" }}>
+    //                             {f.result.includes("NOT_VULNERABLE") ? "未检测到 ROBOT 漏洞" : `ROBOT 状态: ${f.result}`}
+    //                         </div>
+    //                     );
+    //                 }
+
+    //                 // TLS 压缩
+    //                 else if (f.protocol === "TLS_COMPRESSION" && f.compression_supported !== undefined) {
+    //                     content = (
+    //                         <div style={{ color: f.compression_supported ? "tomato" : "#5bc889" }}>
+    //                             {f.compression_supported ? "支持 TLS 压缩（可能易受 CRIME 攻击）" : "不支持 TLS 压缩"}
+    //                         </div>
+    //                     );
+    //                 }
+
+    //                 // 会话重协商
+    //                 else if (f.protocol === "SESSION_RENEGOTIATION" && f.client_renegotiation_vulnerable !== undefined) {
+    //                     content = (
+    //                         <div style={{ color: f.client_renegotiation_vulnerable ? "tomato" : "#5bc889" }}>
+    //                             {f.client_renegotiation_vulnerable
+    //                                 ? "客户端发起的会话重协商存在风险"
+    //                                 : `安全的会话重协商支持: ${f.secure_renegotiation_supported ? "是" : "否"}`}
+    //                         </div>
+    //                     );
+    //                 }
+
+    //                 // 证书链
+    //                 else if (f.certificate_chain) {
+    //                     content = (
+    //                         <ul style={{ margin: 0, paddingLeft: 18 }}>
+    //                             {f.certificate_chain.map((c, i) => (
+    //                                 <li key={i} style={{ lineHeight: 1.4 }}>
+    //                                     <strong>Subject:</strong> {c.subject}, <strong>Issuer:</strong> {c.issuer}, <strong>有效期:</strong> {c.not_before} → {c.not_after}
+    //                                 </li>
+    //                             ))}
+    //                         </ul>
+    //                     );
+    //                 }
+
+    //                 return (
+    //                     <div key={idx} style={{ marginTop: 0.75, padding: 0.75, background: "#1a1a1a", border: "1px solid #444", borderRadius: 6 }}>
+    //                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+    //                             <h4 style={{ margin: 0 }}>{f.protocol}</h4>
+    //                             <span style={{ fontSize: 12, color: f.status === "COMPLETED" ? "#5bc889" : f.status === "ERROR" ? "tomato" : "#ccc" }}>
+    //                                 {f.status}
+    //                             </span>
+    //                         </div>
+    //                         <div style={{ marginTop: 6 }}>
+    //                             {content || <div style={{ color: "#ccc" }}>无可用信息</div>}
+    //                             {f.error_reason && <div style={{ color: "tomato" }}>{f.error_reason}</div>}
+    //                         </div>
+    //                     </div>
+    //                 );
+    //             })}
+    //         </>
+    //     );
+    // };
+    const renderFindings = () => {
+        if (!analysis?.findings?.length) return null;
+
+        // 汇总 TLS 支持的版本
+        const supported = analysis.findings
+            .filter(f => f.status === "COMPLETED" && (f.accepted_cipher_suites?.length || 0) > 0)
+            .map(f => f.protocol.replace("_CIPHER_SUITES", "").replaceAll("_", " ").replace("TLS ", "TLS "))
+            .join(", ");
+
+        return (
+            <>
+                <p><strong>目标：</strong>{analysis.host}:{analysis.port}</p>
+                <p><strong>已检测到支持版本：</strong>{supported || "未检测到"}</p>
+
+                {analysis.findings.map((f, idx) => {
+                    let content = null;
+                    const proto = f.protocol.toUpperCase();
+
+                    // TLS 密码套件
+                    if (f.accepted_cipher_suites?.length) {
+                        content = (
+                            <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                {f.accepted_cipher_suites.map((s, i) => (
+                                    <li key={i} style={{ lineHeight: 1.6 }}>
+                                        {s.name}{typeof s.key_size === "number" ? ` (key_size=${s.key_size})` : ""}
+                                    </li>
+                                ))}
+                            </ul>
+                        );
+                    }
+                    // Heartbleed
+                    else if (proto === "HEARTBLEED" && f.is_vulnerable_to_heartbleed !== undefined) {
+                        content = (
+                            <div style={{ color: f.is_vulnerable_to_heartbleed ? "tomato" : "#5bc889" }}>
+                                {f.is_vulnerable_to_heartbleed ? "存在 Heartbleed 漏洞" : "未检测到 Heartbleed 漏洞"}
+                            </div>
+                        );
+                    }
+                    // ROBOT
+                    else if (proto === "ROBOT" && f.robot_result) {
+                        content = (
+                            <div style={{ color: f.robot_result.includes("NOT_VULNERABLE") ? "#5bc889" : "tomato" }}>
+                                {f.robot_result.includes("NOT_VULNERABLE") ? "未检测到 ROBOT 漏洞" : `ROBOT 状态: ${f.robot_result}`}
+                            </div>
+                        );
+                    }
+                    // TLS 压缩
+                    else if (proto === "TLS_COMPRESSION" && f.supports_compression !== undefined) {
+                        content = (
+                            <div style={{ color: f.supports_compression ? "tomato" : "#5bc889" }}>
+                                {f.supports_compression ? "支持 TLS 压缩（可能易受 CRIME 攻击）" : "不支持 TLS 压缩"}
+                            </div>
+                        );
+                    }
+                    // 会话重协商
+                    else if (proto === "SESSION_RENEGOTIATION" && f.is_vulnerable_to_client_renegotiation_dos !== undefined) {
+                        content = (
+                            <div style={{ color: f.is_vulnerable_to_client_renegotiation_dos ? "tomato" : "#5bc889" }}>
+                                {f.is_vulnerable_to_client_renegotiation_dos
+                                    ? "客户端发起的会话重协商存在风险"
+                                    : `安全的会话重协商支持: ${f.supports_secure_renegotiation ? "是" : "否"}`}
+                            </div>
+                        );
+                    }
+                    // 证书链
+                    else if (proto === "CERTIFICATE_INFO" && f.certificate_deployments?.length) {
+
+                        content = (
+                            <>
+                                {f.certificate_deployments.map((deploy, j) => (
+                                    <ul key={j} style={{ margin: 0, paddingLeft: 18 }}>
+                                        {deploy.received_certificate_chain.map((c, i) => (
+                                            <li key={i} style={{ lineHeight: 1.4 }}>
+                                                <strong>Subject:</strong> {c.subject}, <strong>Issuer:</strong> {c.issuer}, <strong>有效期:</strong> {c.not_before} → {c.not_after}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ))}
+                                {/* {f.certificate_chain?.length > 0 && (
+                                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                        {f.certificate_chain.map((c, i) => (
+                                            <li key={i} style={{ lineHeight: 1.4 }}>
+                                                <strong>Subject CN:</strong> {c.subject}, 
+                                                <strong>Issuer CN:</strong> {c.issuer}, 
+                                                <strong>有效期:</strong> {c.not_before} → {c.not_after}
+                                                <br />
+                                                <small>
+                                                    SHA1: {c.sha1_fingerprint}<br />
+                                                    SHA256: {c.sha256_fingerprint}
+                                                </small>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )} */}
+
+                            </>
+                        );
+                    }
+
+
+                    return (
+                        <div key={idx} style={{ marginTop: 0.75, padding: 0.75, background: "#1a1a1a", border: "1px solid #444", borderRadius: 6 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                                <h4 style={{ margin: 0 }}>{f.protocol}</h4>
+                                <span style={{ fontSize: 12, color: f.status === "COMPLETED" ? "#5bc889" : f.status === "ERROR" ? "tomato" : "#ccc" }}>
+                                    {f.status}
+                                </span>
+                            </div>
+                            <div style={{ marginTop: 6 }}>
+                                {content || <div style={{ color: "#ccc" }}>无可用信息</div>}
+                                {f.error_reason && <div style={{ color: "tomato" }}>{f.error_reason}</div>}
+                            </div>
+                        </div>
+                    );
+                })}
+            </>
+        );
+    };
+
+
+    return (
+        <div style={{ marginTop: "1rem", padding: "1rem", backgroundColor: "#222", color: "#fff", borderRadius: 8 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+                <button
+                    onClick={handleDeepAnalyze}
+                    disabled={loading}
+                    style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#5bc889",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: loading ? "not-allowed" : "pointer",
+                        fontWeight: 600
+                    }}
+                >
+                    {loading ? "分析中..." : "深度分析 (SSLyze 6.x)"}
+                </button>
+
+                {analysis?.debug_info && (
+                    <button
+                        onClick={() => setShowDebug(s => !s)}
+                        style={{
+                            padding: "8px 12px",
+                            backgroundColor: "#444",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer"
+                        }}
+                    >
+                        {showDebug ? "隐藏调试" : "查看调试"}
+                    </button>
+                )}
+            </div>
+
+            {analysis && (
+                <div style={{ marginTop: "1rem" }}>
+                    {analysis.success ? renderFindings() : (
+                        <p style={{ color: "tomato" }}>
+                            分析失败：{analysis.error || "未知错误"}
+                        </p>
+                    )}
+
+                    {showDebug && analysis?.debug_info && (
+                        <div style={{ marginTop: "1rem", padding: "0.75rem", background: "#111", border: "1px dashed #555", borderRadius: 6, maxHeight: 200, overflowY: "auto", fontFamily: "monospace", fontSize: 13 }}>
+                            {analysis.debug_info.map((line, i) => (<div key={i}>{line}</div>))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
