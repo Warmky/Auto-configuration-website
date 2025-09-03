@@ -31,6 +31,15 @@ const getGradeColor = (grade) => {
     }
 };
 
+const radarLabelMap = {
+    sniffing_defense: "监听防御能力",
+    tampering_defense: "配置篡改防御能力",
+    domain_takeover_defense: "域名接管防御能力",
+    fake_cert_defense: "伪造证书防御能力",
+    dns_hijack_defense: "DNS 劫持防御能力"
+};
+
+
 export const renderScoreBar = (label, score) => (
         <div style={{ marginBottom: "10px" }}>
             <strong>{label}:</strong>
@@ -54,7 +63,8 @@ export const renderScoreBar = (label, score) => (
 
 export const renderConnectionDetail = (detail) => (
     <div style={{ marginTop: "20px" }}>
-        <h4>Connection Security</h4>
+        {/* <h4>Connection Security</h4> */}
+        <h4>实际连接安全性检测评分</h4>
         <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
         <div style={{
                 fontSize: "36px",
@@ -110,7 +120,7 @@ export function DefenseRadarChart({ data }) {
     if (!data || typeof data !== 'object') return null;
 
     const chartData = Object.entries(data).map(([key, value]) => ({
-        dimension: key.replace(/_/g, ' ').replace('defense', '').trim(),
+        dimension: radarLabelMap[key]||key.replace(/_/g, ' ').replace('defense', '').trim(),
         score: typeof value === 'number' ? value : 0
     }));
 
@@ -130,7 +140,7 @@ export function DefenseRadarChart({ data }) {
             transition={{ duration: 0.6, ease: "easeOut" }}
         >
             <h4 style={{ marginBottom: "12px", fontSize: "1.2rem", fontWeight: "600", textAlign: "center" }}>
-                🛡️ Defense Capability Radar
+                🛡️ 防御能力雷达图
             </h4>
 
             <ResponsiveContainer width="100%" height="100%">

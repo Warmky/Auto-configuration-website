@@ -1185,6 +1185,8 @@ import {
 } from "./renderHelper";
 import { PeculiarCertificateViewer } from '@peculiar/certificates-viewer-react';
 import LinearProgress from '@mui/material/LinearProgress';
+import "./App.css";
+
 
 function MainPage() {
     const [email, setEmail] = useState("");
@@ -1211,6 +1213,51 @@ function MainPage() {
     // 默认选中第一个有结果的机制
     const firstAvailable = mechanisms.find(m => results[m]) || mechanisms[0];
     const [currentMech, setCurrentMech] = useState(firstAvailable);
+
+    const certLabelMap = {
+        IsTrusted: "是否可信",
+        VerifyError: "验证错误",
+        IsHostnameMatch: "域名是否匹配",
+        IsInOrder: "链顺序是否正确",
+        IsExpired: "是否过期",
+        IsSelfSigned: "是否自签名",
+        SignatureAlg: "签名算法",
+        AlgWarning: "算法警告",
+        TLSVersion: "TLS版本",
+        Subject: "证书主体",
+        Issuer: "签发机构"
+    };
+
+    const dnsFieldMap = {
+        domain: "域名",
+        SOA: "SOA 记录",
+        NS: "NS 记录",
+        ADbit_imap: "IMAP ADBit",
+        ADbit_imaps: "IMAPS ADBit",
+        ADbit_pop3: "POP3 ADBit",
+        ADbit_pop3s: "POP3S ADBit",
+        ADbit_smtp: "SMTP ADBit",
+        ADbit_smtps: "SMTPS ADBit"
+    };
+    
+    const tabLabelMap = {
+        score: "评分",
+        recommend: "建议",
+        radar: "防御雷达图"
+    };
+
+    const spinnerStyle = {
+        border: "4px solid #f3f3f3",
+        borderTop: "4px solid #799cc8ff",
+        borderRadius: "50%",
+        width: "50px",
+        height: "50px",
+        animation: "spin 1s linear infinite",
+        margin: "0 auto"
+    };
+
+
+
 
     useEffect(() => {
         fetchRecent();
@@ -1281,24 +1328,6 @@ function MainPage() {
         }
     };
 
-
-
-    // const handleSearch = async () => {
-    //     setResults({});
-    //     setErrors("");
-    //     setLoading(true);
-    //     try {
-    //         const response = await fetch(`http://localhost:8081/checkAll?email=${email}`);
-    //         if (!response.ok) throw new Error("No valid configuration found.");
-    //         const data = await response.json();
-    //         setResults(data);
-    //         fetchRecent();
-    //     } catch (err) {
-    //         setErrors(err.message);
-    //     }
-    //     setLoading(false);
-    // };
-
     const toggleRaw = (mech) => {
         setShowRawConfig((prev) => ({ ...prev, [mech]: !prev[mech] }));
     };
@@ -1346,38 +1375,79 @@ function MainPage() {
     // 公用按钮样式
     const viewButtonStyle = {
         display: "inline-block",
-        marginTop: "1rem",
-        backgroundColor: "#27ae60",
+        marginTop: "0.3rem",
+        backgroundColor: "#81b5d5ff", 
         color: "white",
-        padding: "10px 15px",
+        padding: "8px 14px",
         textDecoration: "none",
-        borderRadius: "4px",
+        borderRadius: "6px",
         cursor: "pointer",
+        fontSize: "14px",
+        border: "none",
+        transition: "background 0.3s ease"
     };
 
+    const viewButtonHoverStyle = {
+        padding: "12px 24px", // 增加内边距
+        fontSize: "16px", // 字体更大
+        fontWeight: "bold", // 字体加粗
+        backgroundColor: "#2980b9", // 主色调（蓝色）
+        color: "#fff", // 白色文字
+        border: "none",
+        borderRadius: "8px", // 圆角更大
+        cursor: "pointer",
+        margin: "10px 0",
+        transition: "background-color 0.3s ease", // 平滑过渡
+    };
 
-    // 样式
+    // hover 效果（用 className 或内联处理）
+    const viewButtonHover = {
+        backgroundColor: "#219150" // 稍深的绿色
+    };
+
     const tabStyle = (mech) => ({
         cursor: "pointer",
         padding: "10px 20px",
         borderBottom: mech === currentMech ? "3px solid #3498db" : "3px solid transparent",
-        color: mech === currentMech ? "#3498db" : "#888",
+        color: mech === currentMech ? "#3498db" : "#666",
         fontWeight: mech === currentMech ? "bold" : "normal",
         userSelect: "none",
         marginRight: "10px",
+        fontSize: "16px"
     });
 
     const thStyle = {
-        padding: "8px",
-        backgroundColor: "#a1ccdeff",
-        color: "#fff",
-        textAlign: "left"
+        padding: "12px",
+        borderBottom: "2px solid #ceddebff",
+        textAlign: "center",
+        fontSize: "15px",
+        backgroundColor: "#d3ebf1ff",
+        color: "#333",
+        fontWeight: 500,
+        height: "40px",
+        whiteSpace: "nowrap" // 表头文字不换行
     };
+
     const tdStyle = {
-        padding: "8px",
-        color: "#485156ff",
-        fontSize: "14px"
+        padding: "10px",
+        borderBottom: "1px solid #759dc2ff",
+        textAlign: "center",
+        fontSize: "14px",
+        color: "#333",
+        maxWidth: "200px",     // 限制宽度
+        wordBreak: "break-word" // 自动换行
     };
+
+
+    const tableStyle = {
+        width: "95%",
+        margin: "15px auto",
+        borderCollapse: "collapse",
+        borderRadius: "8px",
+        overflow: "hidden",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.05)"
+    };
+
 
     // 当前机制内容渲染函数7.28
     const renderMechanismContent = (mech) => {
@@ -1396,9 +1466,14 @@ function MainPage() {
         return (
             <div>
                 {(mech === "autodiscover" || mech === "autoconfig") && result.all && (
-                    <div>
-                        <h4>📡 All {mech.toUpperCase()} Methods</h4>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <div style={{
+                        fontFamily: '"PingFang SC", "Microsoft YaHei", sans-serif',
+                        fontWeight: 400,
+                        textAlign: "left"
+                    }}>
+                        <h4>📡 可通过 {mech.toUpperCase()} 方法得到的所有配置</h4>
+                        {/* <table style={{ width: "100%", borderCollapse: "collapse" }}> */}
+                        <table style={tableStyle}>
                             <thead>
                                 <tr>
                                     {/* <th style={thStyle}>Method</th>
@@ -1415,8 +1490,8 @@ function MainPage() {
                                     <th style={thStyle}>是否得到配置</th>
                                     <th style={thStyle}>加密评分</th>
                                     <th style={thStyle}>标准评分</th>
-                                    <th style={thStyle}>分数</th>
-                                    <th style={thStyle}>查看</th>
+                                    <th style={thStyle}>综合评分</th>
+                                    <th style={thStyle}>查看详情</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1424,7 +1499,36 @@ function MainPage() {
                                     <tr key={idx}>
                                         <td style={tdStyle}>{item.method}</td>
                                         <td style={tdStyle}>{item.index}</td>
-                                        <td style={tdStyle}>{item.uri}</td>
+                                        <td style={{ ...tdStyle, maxWidth: "250px", overflow: "hidden" }}>
+                                        <div
+                                            style={{
+                                            overflowX: "auto",
+                                            whiteSpace: "nowrap",
+                                            scrollbarWidth: "thin", // Firefox
+                                            scrollbarColor: "#ccc transparent", // Firefox
+                                            }}
+                                            className="scrollable-uri"
+                                        >
+                                            {item.uri}
+                                        </div>
+                                        </td>
+
+                                        <style>
+                                            {`
+                                            .scrollable-uri::-webkit-scrollbar {
+                                                height: 6px; /* 滚动条高度（横向） */
+                                            }
+                                            .scrollable-uri::-webkit-scrollbar-thumb {
+                                                background-color: #853333ff; /* 滚动条颜色 */
+                                                border-radius: 3px;
+                                            }
+                                            .scrollable-uri::-webkit-scrollbar-track {
+                                                background: transparent; /* 背景透明 */
+                                            }
+                                            `}
+                                        </style>
+
+
                                         <td style={tdStyle}>{item.config ? "✅" : "❌"}</td>
                                         <td style={tdStyle}>{item.score?.encrypted_ports ?? "-"}</td>
                                         <td style={tdStyle}>{item.score?.standard_ports ?? "-"}</td>
@@ -1449,8 +1553,6 @@ function MainPage() {
                                                 <button
                                                 onClick={async () => {
                                                     console.log("当前 item:", item);
-
-                                                    // ⚠️ 一定要用 item 自己的数据
                                                     const payload = {
                                                         config: item.config,
                                                         uri: item.uri,
@@ -1478,13 +1580,7 @@ function MainPage() {
                                                     alert("⚠️ 无法打开详情页");
                                                     }
                                                 }}
-                                                style={{
-                                                    color: "#3498db",
-                                                    textDecoration: "underline",
-                                                    background: "none",
-                                                    border: "none",
-                                                    cursor: "pointer",
-                                                }}
+                                                style={viewButtonStyle}
                                                 >
                                                 查看
                                                 </button>
@@ -1495,19 +1591,6 @@ function MainPage() {
                                 ))}
                             </tbody>
                         </table>
-
-                        {/* {(() => {
-                            const configs = result.all.map(r => r.config).filter(Boolean);
-                            const unique = [...new Set(configs)];
-                            if (unique.length > 1) {
-                                return (
-                                    <p style={{ color: "#e74c3c", marginTop: "10px" }}>
-                                        ⚠️ 检测到多个路径配置结果不一致，请手动确认是否存在配置偏差！
-                                    </p>
-                                );
-                            }
-                            return null;
-                        })()} */}
 
                         {/* 8.29 */}
                         {(() => {
@@ -1566,7 +1649,7 @@ function MainPage() {
 
                             return (
                                 <div style={{ marginTop: "10px", color: "#e74c3c", fontWeight: "bold" }}>
-                                    ⚠️ 检测到该机制下不同路径的关键字段不一致：
+                                    ⚠️ 检测到该机制下不同路径得到的配置信息中的关键字段不一致：
                                     <div style={{ marginTop: "10px", color: "#333", fontWeight: "normal" }}>
                                         {keys.map((item, idx) => (
                                             <div
@@ -1612,14 +1695,13 @@ function MainPage() {
 
                         {Array.isArray(portsUsage) && portsUsage.length > 0 && (
                             <div style={{ marginTop: "2rem" }}>
-                                {/* <h4 style={{ marginBottom: "1rem" }}>🔌 Service Configuration Overview</h4> */}
                                 <h4 style={{ marginBottom: "1rem" }}>🔌 配置信息概况</h4>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
                                     {portsUsage.map((item, idx) => (
                                         <div
                                             key={idx}
                                             style={{
-                                                backgroundColor: "#7ba8c6ff",
+                                                backgroundColor: "#cee9f0ff",
                                                 color: "#ddd",
                                                 padding: "1rem",
                                                 borderRadius: "12px",
@@ -1633,7 +1715,6 @@ function MainPage() {
                                             <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                                 <tbody>
                                                     <tr>
-                                                        {/* <td style={tdStyle}><strong>Protocol</strong></td> */}
                                                         <td style={tdStyle}><strong>协议</strong></td>
                                                         <td style={tdStyle}>{item.protocol}</td>
                                                     </tr>
@@ -1643,24 +1724,18 @@ function MainPage() {
                                                         <td style={tdStyle}>{item.port}</td>
                                                     </tr>
                                                     <tr>
-                                                        {/* <td style={tdStyle}><strong>Host</strong></td> */}
                                                         <td style={tdStyle}><strong>主机名</strong></td>
                                                         <td style={tdStyle}>{item.host}</td>
                                                     </tr>
                                                     <tr>
-                                                        {/* <td style={tdStyle}><strong>SSL</strong></td> */}
                                                         <td style={tdStyle}><strong>SSL类型</strong></td>
                                                         <td style={tdStyle}>{item.ssl}</td>
                                                     </tr>
                                                     <tr>
-                                                        {/* <td style={tdStyle}><strong>Username</strong></td>
-                                                        <td style={tdStyle}>Your email address</td> */}
                                                         <td style={tdStyle}><strong>用户名</strong></td>
                                                         <td style={tdStyle}>你的邮件地址</td>
                                                     </tr>
                                                     <tr>
-                                                        {/* <td style={tdStyle}><strong>Password</strong></td>
-                                                        <td style={tdStyle}>Your password</td> */}
                                                         <td style={tdStyle}><strong>密码</strong></td>
                                                         <td style={tdStyle}>你的邮箱密码</td>
                                                     </tr>
@@ -1676,18 +1751,16 @@ function MainPage() {
 
                 {mech === "srv" && result.srv_records && (
                     <>
-                        {/* <h4>📄 SRV Records</h4> */}
-                        <h4>📄 SRV 记录</h4>
-                        <pre style={{ background: "#7ba8c6ff", color: "#4c5a64ff", padding: "10px", borderRadius: "4px" }}>
+                        <h4>📄 原始SRV 记录</h4>
+                        <pre style={{ background: "#cee9f0ff", color: "#4c5a64ff", padding: "10px", borderRadius: "4px" }}>
                             {JSON.stringify(result.srv_records, null, 2)}
                         </pre>
                         {result.dns_record && (
                             <>
-                                {/* <h4>DNS Info</h4> */}
-                                <h4>DNS 信息</h4>
+                                <h4>🌐 DNS 信息</h4>
                                 <ul>
                                     {Object.entries(result.dns_record).map(([k, v]) => (
-                                        <li key={k}><strong>{k}:</strong> {String(v)}</li>
+                                        <li key={k}><strong>{dnsFieldMap[k]||k}:</strong> {String(v)}</li>
                                     ))}
                                 </ul>
                             </>
@@ -1704,7 +1777,7 @@ function MainPage() {
                         <div
                             key={`recv-${idx}`}
                             style={{
-                            backgroundColor: "#7ba8c6ff",
+                            backgroundColor: "#cee9f0ff",
                             color: "#ddd",
                             padding: "1rem",
                             borderRadius: "12px",
@@ -1761,7 +1834,7 @@ function MainPage() {
                         <div
                             key={`send-${idx}`}
                             style={{
-                            backgroundColor: "#7ba8c6ff",
+                            backgroundColor: "#cee9f0ff",
                             color: "#ddd",
                             padding: "1rem",
                             borderRadius: "12px",
@@ -1815,29 +1888,40 @@ function MainPage() {
                     <>
                         <h4
                             onClick={() => toggleRaw(mech)}
-                            style={{ cursor: "pointer", color: "#31587dff", userSelect: "none" }}>
-                            Raw Config {showRawConfig[mech] ? "▲" : "▼"}
+                            style={{ cursor: "pointer", color: "#3e5c79ff", userSelect: "none" }}>
+                            🛠️原始配置文件 {showRawConfig[mech] ? "▲" : "▼"}
                         </h4>
                         {showRawConfig[mech] && (
-                            <pre style={{ background: "#84b1d1ff", padding: "12px", borderRadius: "6px" }}>
+                            <pre style={{ background: "#b6cbd9ff", padding: "12px", borderRadius: "6px" }}>
                                 {result.config}
                             </pre>
                         )}
 
-                        <h4>Cert Info</h4>
+                        <h4>📄 配置服务器证书信息</h4>
                         <ul>
                             {Object.entries(certInfo || {}).map(([k, v]) => (
-                                k !== "RawCert" && k !== "RawCerts" && (
-                                    // <li key={k}><strong>{k}:</strong> {String(v)}</li> 7.28
-                                    <li key={k} style={{ color: "#364957ff" }}>
-                                        <strong>{k}:</strong> {String(v)}
+                                k !== "RawCert" && k !== "RawCerts" && v !== "" && (
+                                    <li key={k} style={{ color: "#364957ff", marginBottom: "4px"}}>
+                                        <strong>{certLabelMap[k] || k}:</strong> {String(v)}
                                     </li>
                                 )
                             ))}
                             {certInfo?.RawCerts && (
                                 <li>
-                                    <strong>RawCerts:</strong>
-                                    <button onClick={() => toggleRawCerts(mech)} style={{ marginLeft: '10px' }}>
+                                    <strong>原始证书:</strong>
+                                    <button 
+                                        onClick={() => toggleRawCerts(mech)} 
+                                        style={{ 
+                                            marginLeft: '10px',
+                                            padding: '4px 8px',
+                                            backgroundColor: '#5b73a9ff',
+                                            color: '#fff',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9rem'
+                                        }}
+                                    >
                                         {showRawCertsMap[mech] ? "隐藏" : "展开"}
                                     </button>
                                     {showRawCertsMap[mech] && (
@@ -1846,9 +1930,10 @@ function MainPage() {
                                             maxHeight: '200px',
                                             overflowY: 'auto',
                                             marginTop: '10px',
-                                            background: '#a6d1e3ff',
-                                            padding: '8px',
-                                            borderRadius: '6px'
+                                            background: '#f5f5f5',
+                                            padding: '10px',
+                                            borderRadius: '6px',
+                                            border: '1px solid #ccc'
                                         }}>
                                             {certInfo.RawCerts.join(', ')}
                                         </div>
@@ -1861,9 +1946,16 @@ function MainPage() {
                             <div style={{ marginTop: '20px' }}>
                                 <h4
                                     onClick={() => toggleCertChain(mech)}
-                                    style={{ cursor: "pointer", color: "#3e5c79ff", userSelect: "none" }}
+                                    style={{ 
+                                        cursor: "pointer", 
+                                        color: "#3e5c79ff", 
+                                        userSelect: "none",
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
                                 >
-                                    Certificate Chain {showCertChainMap[mech] ? "▲" : "▼"}
+                                    🔗 配置服务器证书链 {showCertChainMap[mech] ? "▲" : "▼"}
                                 </h4>
 
                                 {showCertChainMap[mech] && (
@@ -1877,13 +1969,14 @@ function MainPage() {
                                                         marginRight: '8px',
                                                         padding: '4px 10px',
                                                         backgroundColor: activeCertIdxMap[mech] === idx ? '#5b73a9ff' : '#ddd',
-                                                        color: activeCertIdxMap[mech] === idx ? '#8899beff' : '#000',
+                                                        color: activeCertIdxMap[mech] === idx ? '#fff' : '#000',
                                                         border: 'none',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer'
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 'bold'
                                                     }}
                                                 >
-                                                    #{idx + 1}
+                                                    第{idx + 1}证书
                                                 </button>
                                             ))}
                                         </div>
@@ -2011,10 +2104,10 @@ function MainPage() {
                     <tbody>
                         {result.score_detail.ports_usage.map((item, idx) => (
                         <tr key={idx}>
-                            <td style={{ fontSize: "18px", color: "#4578e5ff", fontWeight: "bold" }} className="border border-gray-300 px-4 py-2">
+                            <td style={{ fontSize: "18px", color: "#658adbff", fontWeight: "bold" }} className="border border-gray-300 px-4 py-2">
                             {item.host}
                             </td>
-                            <td style={{ fontSize: "18px", color: "#2a8cedff", fontWeight: "bold" }} className="border border-gray-300 px-4 py-2">
+                            <td style={{ fontSize: "18px", color: "#4d9ae8ff", fontWeight: "bold" }} className="border border-gray-300 px-4 py-2">
                             {item.port}
                             </td>
                         </tr>
@@ -2036,7 +2129,7 @@ function MainPage() {
                         <button
                             key={type}
                             onClick={() => handleViewDetailsClick(type, result.score_detail.actualconnect_details)}
-                            style={viewButtonStyle}
+                            style={viewButtonHoverStyle}
                         >
                             查看连接详情({type.toUpperCase()})
                         </button>
@@ -2064,83 +2157,88 @@ function MainPage() {
 
 
                 {/* 折叠主观分析 */}
-                <h3
-                    onClick={() => toggleAnalysis(mech)}
-                    style={{ marginTop: "20px", cursor: "pointer", color: "#5f8fcaff", userSelect: "none" }}
-                >
-                    {showAnalysis[mech] ? "⬆️ 收起分析结果" : "⬇️ 展开评分与建议"}
-                </h3>
-
-                {showAnalysis[mech] && (
+                {mech !== "guess" && (
                     <>
-                        <div style={{ display: "flex", marginBottom: "1rem" }}>
-                            {["score", "recommend", "radar"].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => changeTab(mech, tab)}
-                                    style={{
-                                        padding: "8px 16px",
-                                        marginRight: "8px",
-                                        backgroundColor: (activeTab[mech] === tab ? "#2980b9" : "#7f8c8d"),
-                                        color: "#fff",
-                                        border: "none",
-                                        borderRadius: "4px"
-                                    }}>
-                                    {tab.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
+                        <h3
+                            onClick={() => toggleAnalysis(mech)}
+                            style={{ marginTop: "20px", cursor: "pointer", color: "#83a3cbff", userSelect: "none" }}
+                        >
+                            {showAnalysis[mech] ? "⬆️ 收起分析结果" : "⬇️ 展开评分与建议"}
+                        </h3>
 
-                        {activeTab[mech] === "score" && (
+                        {showAnalysis[mech] && (
                             <>
-                                {renderScoreBar("Encrypted Ports", score.encrypted_ports || 0)}
-                                {renderScoreBar("Standard Ports", score.standard_ports || 0)}
-                                {renderScoreBar(
-                                    mech === "srv" ? "DNSSEC Score" : "Certificate Score",
-                                    mech === "srv" ? score.dnssec_score || 0 : score.cert_score || 0
+                                <div style={{ display: "flex", marginBottom: "1rem" }}>
+                                    {["score", "recommend", "radar"].map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => changeTab(mech, tab)}
+                                            style={{
+                                                padding: "8px 16px",
+                                                marginRight: "8px",
+                                                backgroundColor: (activeTab[mech] === tab ? "#2980b9" : "#7f8c8d"),
+                                                color: "#fff",
+                                                border: "none",
+                                                borderRadius: "4px"
+                                            }}>
+                                            {/* {tab.toUpperCase()} */}
+                                            {tabLabelMap[tab]}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {activeTab[mech] === "score" && (
+                                    <>
+                                        {renderScoreBar("加密端口评分", score.encrypted_ports || 0)}
+                                        {renderScoreBar("标准端口评分", score.standard_ports || 0)}
+                                        {renderScoreBar(
+                                            mech === "srv" ? "DNSSEC评分" : "证书评分",
+                                            mech === "srv" ? score.dnssec_score || 0 : score.cert_score || 0
+                                        )}
+                                        {renderScoreBar("实际连接评分", score.connect_score || 0)}
+                                        {renderConnectionDetail(detail)}
+                                    </>
                                 )}
-                                {renderScoreBar("Connection Score", score.connect_score || 0)}
-                                {renderConnectionDetail(detail)}
+
+                                {activeTab[mech] === "recommend" && (
+                                    <div style={{ backgroundColor: "#7ab0ceff", padding: "15px", borderRadius: "6px" }}>
+                                        {(mech === "autodiscover"|| mech === "autoconfig") && portsUsage && (() => {
+                                            const rec = getAutodiscoverRecommendations(portsUsage, score);
+                                            return (
+                                                <>
+                                                    <h4>🔧 端口使用建议</h4>
+                                                    <ul>{rec.tips.map((tip, i) => <li key={i}>{tip.text} <b>{tip.impact}</b></li>)}</ul>
+                                                    <p><b>预估改进后评分:</b> {rec.improvedScore}</p>
+                                                </>
+                                            );
+                                        })()}
+                                        {mech === "srv" && portsUsage && (() => {
+                                            const rec = getSRVRecommendations(portsUsage, score);
+                                            return (
+                                                <>
+                                                    <h4>🔧 端口使用建议</h4>
+                                                    <ul>{rec.tips.map((tip, i) => <li key={i}>{tip.text} <b>{tip.impact}</b></li>)}</ul>
+                                                    <p><b>预估改进后评分:</b> {rec.improvedScore}</p>
+                                                </>
+                                            );
+                                        })()}
+                                        {(mech === "autodiscover" || mech === "autoconfig") && certInfo && (() => {
+                                            const rec = getCertRecommendations(certInfo, score);
+                                            return (
+                                                <>
+                                                    <h4>📜 证书配置建议</h4>
+                                                    <ul>{rec.tips.map((tip, i) => <li key={i}>{tip.text} <b>{tip.impact}</b></li>)}</ul>
+                                                    <p><b>预估改进后评分:</b> {rec.improvedScore}</p>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+
+                                {activeTab[mech] === "radar" && defense && (
+                                    <DefenseRadarChart data={defense} />
+                                )}
                             </>
-                        )}
-
-                        {activeTab[mech] === "recommend" && (
-                            <div style={{ backgroundColor: "#7ab0ceff", padding: "15px", borderRadius: "6px" }}>
-                                {mech === "autodiscover" && portsUsage && (() => {
-                                    const rec = getAutodiscoverRecommendations(portsUsage, score);
-                                    return (
-                                        <>
-                                            <h4>🔧 Port Usage Suggestions</h4>
-                                            <ul>{rec.tips.map((tip, i) => <li key={i}>{tip.text} <b>{tip.impact}</b></li>)}</ul>
-                                            <p><b>Estimated Score:</b> {rec.improvedScore}</p>
-                                        </>
-                                    );
-                                })()}
-                                {mech === "srv" && portsUsage && (() => {
-                                    const rec = getSRVRecommendations(portsUsage, score);
-                                    return (
-                                        <>
-                                            <h4>🔧 Port Usage Suggestions</h4>
-                                            <ul>{rec.tips.map((tip, i) => <li key={i}>{tip.text} <b>{tip.impact}</b></li>)}</ul>
-                                            <p><b>Estimated Score:</b> {rec.improvedScore}</p>
-                                        </>
-                                    );
-                                })()}
-                                {(mech === "autodiscover" || mech === "autoconfig") && certInfo && (() => {
-                                    const rec = getCertRecommendations(certInfo, score);
-                                    return (
-                                        <>
-                                            <h4>📜 Certificate Suggestions</h4>
-                                            <ul>{rec.tips.map((tip, i) => <li key={i}>{tip.text} <b>{tip.impact}</b></li>)}</ul>
-                                            <p><b>Estimated Score:</b> {rec.improvedScore}</p>
-                                        </>
-                                    );
-                                })()}
-                            </div>
-                        )}
-
-                        {activeTab[mech] === "radar" && defense && (
-                            <DefenseRadarChart data={defense} />
                         )}
                     </>
                 )}
@@ -2150,146 +2248,134 @@ function MainPage() {
     const hasAnyResult = Object.values(results).some((r) => r && Object.keys(r).length > 0);{/*7.28 */}
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10vh", marginBottom: "2rem" }}> {/* 7.28 */}
-        {/* <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>Auto Configuration Checker</h1> */}
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>邮件自动化配置检测</h1>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10vh", marginBottom: "2rem" }}>
+            <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#799cc8ff" }}>邮件自动化配置检测</h1>
 
-        <div>
-            <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                // placeholder="Enter email address"
-                placeholder="请输入您的邮件地址"
-                style={{
-                    padding: "1rem",
-                    width: "400px",
-                    fontSize: "1.2rem",
-                    borderRadius: "8px",
-                    border: "1px solid #ccc"
-                }}
-            />
-            <button
-                onClick={handleSearch}
-                style={{
-                    marginLeft: "1rem",
-                    padding: "1rem",
-                    fontSize: "1.2rem",
-                    borderRadius: "8px",
-                    backgroundColor: "#007bff",
-                    color: "white",
-                    border: "none",
-                    cursor: "pointer"
-                }}
-            >
-                {/* Check */}
-                开始检测
-            </button>
-        </div>
-
-        {loading && (
-            <div style={{ marginTop: "1rem", width: "400px", textAlign: "center" }}>
-                <div style={{ background: "#eee", borderRadius: "10px", overflow: "hidden", height: "20px", marginBottom: "0.5rem" }}>
-                    <div style={{
-                        width: `${progress}%`,
-                        background: "#1976d2",
-                        height: "100%",
-                        transition: "width 0.3s ease"
-                    }}></div>
-                </div>
-                <p>{progress}% - {stage} - {progressMessage}</p>
-            </div>
-        )}
-
-        {/* {loading && <p>⏳ Checking...</p>} */}
-        {/* {loading && (
-            <div style={{ marginTop: "1rem" }}>
-                <LinearProgress variant="determinate" value={progress} />
-                <p>Checking... {progress}%</p>
-            </div>
-        )} */}
-        {errors && <p style={{ color: "red" }}>{errors}</p>}
-
-        {/* 机制 Tabs */}
-        {/* <div style={{ display: "flex", borderBottom: "2px solid #ddd", marginBottom: "1rem" }}>
-            {mechanisms.map((mech) => (
-                <div
-                    key={mech}
-                    style={tabStyle(mech)}
-                    onClick={() => setCurrentMech(mech)}
-                >
-                    {mech.toUpperCase()}
-                </div>
-            ))}
-        </div> 7.28下面可用*/}
-        {hasAnyResult && (
-            <>
-                <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-                    {mechanisms.map((mech) => (
-                        <div
-                            key={mech}
-                            onClick={() => setCurrentMech(mech)}
-                            style={{
-                                padding: "0.8rem 1.2rem",
-                                borderRadius: "10px",
-                                cursor: "pointer",
-                                backgroundColor: currentMech === mech ? "#1976d2" : "#a1aeb1ff",
-                                color: currentMech === mech ? "#fff" : "#ccc",
-                                border: currentMech === mech ? "2px solid #1976d2" : "2px solid #555",
-                                boxShadow: currentMech === mech ? "0 2px 8px rgba(25, 118, 210, 0.4)" : "none",
-                                transition: "all 0.2s ease-in-out",
-                                minWidth: "120px",
-                                textAlign: "center",
-                                fontWeight: 600,
-                                letterSpacing: "0.5px",
-                            }}
-                        >
-                            {mech.toUpperCase()}
-                        </div>
-                    ))}
-                </div>
-
-
-                {/* 当前机制内容7.28 */}
-                <div
+            <div>
+                <input
+                    type="text"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="请输入您的邮件地址"
                     style={{
-                        width: "100%",
-                        maxWidth: "900px",
-                        backgroundColor: "#94c4dc",
-                        padding: "2rem",
-                        borderRadius: "12px",
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
-                        border: "1px solid #eee",
-                        marginTop: "1rem"
+                        padding: "1rem",
+                        width: "400px",
+                        fontSize: "1.2rem",
+                        borderRadius: "8px",
+                        border: "1px solid #ccc",
+                        outline: "none"
                     }}
+                />
+                <button
+                    onClick={handleSearch}
+                    style={{
+                        marginLeft: "1rem",
+                        padding: "1rem",
+                        fontSize: "1.2rem",
+                        borderRadius: "8px",
+                        backgroundColor: "#93b8d0ff",
+                        color: "white",
+                        border: "none",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        transition: "background 0.3s"
+                    }}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
+                    onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
                 >
-                    {renderMechanismContent(currentMech)}
+                    开始检测
+                </button>
+            </div>
+
+            {/* {loading && (
+                <div style={{ marginTop: "1rem", width: "400px", textAlign: "center" }}>
+                    <div style={{ background: "#f0f4f8", borderRadius: "10px", overflow: "hidden", height: "20px", marginBottom: "0.5rem" }}>
+                        <div style={{
+                            width: `${progress}%`,
+                            background: "#8aa3b4",
+                            height: "100%",
+                            transition: "width 0.3s ease"
+                        }}></div>
+                    </div>
+                    <p style={{ color: "#555" }}>{progress}% - {stage} - {progressMessage}</p>
                 </div>
-            </>
-        )}
+            )} */}
 
-        <CSVUploadForm />
+            {loading && (
+                <div style={{ marginTop: "2rem", textAlign: "center" }}>
+                    <div style={spinnerStyle}></div>
+                    <p style={{ marginTop: "1rem", color: "#555" }}>
+                    {stage} - {progressMessage}
+                    </p>
+                </div>
+            )}
 
-        {/* Recently Seen */}
-        {/* <h2 style={{ marginTop: "3rem" }}>Recently Seen</h2> */}
-        <h2 style={{ marginTop: "3rem" }}>历史查询</h2>
-        {recentlySeen.length > 0 ? (
-            <ul>
-                {recentlySeen.map((item, index) => (
-                    <li key={index}>
-                        <strong>{item.domain}</strong> - Score: {item.score}, Grade: {item.grade}, Time:{" "}
-                        {new Date(item.timestamp).toLocaleString()}
-                    </li>
-                ))}
-            </ul>
-        ) : (
-            // <p>No Records</p>
-            <p>暂无记录</p>
-        )}
+
+
+            {errors && <p style={{ color: "red" }}>{errors}</p>}
+
+            {hasAnyResult && (
+                <>
+                    <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+                        {mechanisms.map((mech) => (
+                            <div
+                                key={mech}
+                                onClick={() => setCurrentMech(mech)}
+                                style={{
+                                    padding: "0.8rem 1.2rem",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    backgroundColor: currentMech === mech ? "#e3edf5" : "#f9f9f9",
+                                    color: currentMech === mech ? "#3a506b" : "#888",
+                                    border: currentMech === mech ? "2px solid #8aa3b4" : "1px solid #ddd",
+                                    boxShadow: currentMech === mech ? "0 2px 6px rgba(138,163,180,0.4)" : "none",
+                                    transition: "all 0.2s ease-in-out",
+                                    minWidth: "120px",
+                                    textAlign: "center",
+                                    fontWeight: 600,
+                                    letterSpacing: "0.5px"
+                                }}
+                            >
+                                {mech.toUpperCase()}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div
+                        style={{
+                            width: "100%",
+                            maxWidth: "900px",
+                            backgroundColor: "#f5f8fa",
+                            padding: "2rem",
+                            borderRadius: "12px",
+                            boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+                            border: "1px solid #eee",
+                            marginTop: "1rem"
+                        }}
+                    >
+                        {renderMechanismContent(currentMech)}
+                    </div>
+                </>
+            )}
+
+            <CSVUploadForm />
+
+            <h2 style={{ marginTop: "3rem", color: "#688ebcff" }}>历史查询</h2>
+            {recentlySeen.length > 0 ? (
+                <ul>
+                    {recentlySeen.map((item, index) => (
+                        <li key={index} style={{ color: "#444" }}>
+                            <strong>{item.domain}</strong> - Score: {item.score}, Grade: {item.grade}, Time:{" "}
+                            {new Date(item.timestamp).toLocaleString()}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p style={{ color: "#888" }}>暂无记录</p>
+            )}
         </div>
-
-        
     );
+
 }
 
 
@@ -2349,36 +2435,23 @@ function CSVUploadForm() {
         }
     };
 
-
-    // return (
-    //     <div style={{ marginBottom: "30px", border: "1px solid #ccc", padding: "10px" }}>
-    //         <h3>📄 批量域名检测</h3>
-    //         <input type="file" accept=".csv" onChange={handleUpload} />
-    //         {isUploading && <p>处理中，请稍等...</p>}
-    //         {downloadUrl && (
-    //         <p>
-    //             ✅ 查询完成，
-    //             <button onClick={handleDownload}>点击下载结果</button>
-    //         </p>
-    //         )}
-    //     </div>
-    // );
     return (
         <div style={{ marginBottom: "30px", padding: "20px", textAlign: "center" }}>
-            <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "#333" }}>📄 批量域名检测</h3>
+            <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "#688ebcff" }}>📄 批量域名检测</h3>
             
-            {/* 上传按钮 */}
             <label 
                 style={{ 
                     display: "inline-block",
                     padding: "10px 20px",
-                    backgroundColor: "#79c9dfff",
+                    backgroundColor: "#abd1e9ff",
                     color: "white",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontWeight: "bold",
                     transition: "background 0.3s"
                 }}
+                onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
+                onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
             >
                 选择 CSV 文件
                 <input 
@@ -2389,7 +2462,7 @@ function CSVUploadForm() {
                 />
             </label>
 
-            {isUploading && <p style={{ marginTop: "1rem", color: "#999" }}>⏳ 处理中，请稍等...</p>}
+            {isUploading && <p style={{ marginTop: "1rem", color: "#888" }}>⏳ 处理中，请稍等...</p>}
 
             {downloadUrl && (
                 <p style={{ marginTop: "1rem" }}>
@@ -2399,13 +2472,16 @@ function CSVUploadForm() {
                         style={{
                             marginLeft: "10px",
                             padding: "8px 16px",
-                            backgroundColor: "#70aadaff",
+                            backgroundColor: "#3a506b",
                             color: "white",
                             border: "none",
                             borderRadius: "6px",
                             cursor: "pointer",
-                            fontWeight: "bold"
+                            fontWeight: "bold",
+                            transition: "background 0.3s"
                         }}
+                        onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
+                        onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
                     >
                         点击下载结果
                     </button>
@@ -2413,6 +2489,7 @@ function CSVUploadForm() {
             )}
         </div>
     );
+
 
 }
 

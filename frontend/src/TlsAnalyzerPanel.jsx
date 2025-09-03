@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import CertificateChain from "./certchain"
 
 export default function TlsAnalyzerPanel({ host, port }) {
     const [loading, setLoading] = useState(false);
@@ -162,78 +163,97 @@ export default function TlsAnalyzerPanel({ host, port }) {
                     // Heartbleed
                     else if (proto === "HEARTBLEED" && f.is_vulnerable_to_heartbleed !== undefined) {
                         content = (
-                            <div style={{ color: f.is_vulnerable_to_heartbleed ? "tomato" : "#5bc889" }}>
-                                {f.is_vulnerable_to_heartbleed ? "存在 Heartbleed 漏洞" : "未检测到 Heartbleed 漏洞"}
+                            <div style={{ color: f.is_vulnerable_to_heartbleed ? "tomato" : "#355f56ff" }}>
+                                {f.is_vulnerable_to_heartbleed ? "❌ 存在 Heartbleed 漏洞 → 服务器可能被攻击者读取敏感信息" 
+                                                            : "✅ 未检测到 Heartbleed 漏洞 → 服务器安全"}
                             </div>
                         );
                     }
+
                     // ROBOT
                     else if (proto === "ROBOT" && f.robot_result) {
+                        const safe = f.robot_result.includes("NOT_VULNERABLE");
                         content = (
-                            <div style={{ color: f.robot_result.includes("NOT_VULNERABLE") ? "#5bc889" : "tomato" }}>
-                                {f.robot_result.includes("NOT_VULNERABLE") ? "未检测到 ROBOT 漏洞" : `ROBOT 状态: ${f.robot_result}`}
+                            <div style={{ color: safe ? "#355f56ff" : "tomato" }}>
+                                {safe ? "✅ 未检测到 ROBOT 漏洞 → RSA 加密未受已知攻击威胁" 
+                                    : `❌ ROBOT 状态: ${f.robot_result} → RSA 加密存在安全风险`}
                             </div>
                         );
                     }
+
                     // TLS 压缩
                     else if (proto === "TLS_COMPRESSION" && f.supports_compression !== undefined) {
+                        const safe = !f.supports_compression;
                         content = (
-                            <div style={{ color: f.supports_compression ? "tomato" : "#5bc889" }}>
-                                {f.supports_compression ? "支持 TLS 压缩（可能易受 CRIME 攻击）" : "不支持 TLS 压缩"}
+                            <div style={{ color: safe ? "#355f56ff" : "tomato" }}>
+                                {safe ? "✅ 不支持 TLS 压缩 → 防止 CRIME 攻击" 
+                                    : "⚠️ 支持 TLS 压缩 → 可能易受 CRIME 攻击"}
                             </div>
                         );
                     }
+
                     // 会话重协商
                     else if (proto === "SESSION_RENEGOTIATION" && f.is_vulnerable_to_client_renegotiation_dos !== undefined) {
+                        const safe = !f.is_vulnerable_to_client_renegotiation_dos;
                         content = (
-                            <div style={{ color: f.is_vulnerable_to_client_renegotiation_dos ? "tomato" : "#5bc889" }}>
-                                {f.is_vulnerable_to_client_renegotiation_dos
-                                    ? "客户端发起的会话重协商存在风险"
-                                    : `安全的会话重协商支持: ${f.supports_secure_renegotiation ? "是" : "否"}`}
+                            <div style={{ color: safe ? "#355f56ff" : "tomato" }}>
+                                {safe 
+                                    ? `✅ 安全的会话重协商支持: ${f.supports_secure_renegotiation ? "是" : "否"} → 会话安全性良好`
+                                    : "⚠️ 客户端发起的会话重协商存在风险 → 可能被 DoS 攻击"}
                             </div>
                         );
                     }
+
                     // 证书链
+                    // else if (proto === "CERTIFICATE_INFO" && f.certificate_deployments?.length) {
+
+                    //     content = (
+                    //         <>
+                    //             {f.certificate_deployments.map((deploy, j) => (
+                    //                 <ul key={j} style={{ margin: 0, paddingLeft: 18 }}>
+                    //                     {deploy.received_certificate_chain.map((c, i) => (
+                    //                         <li key={i} style={{ lineHeight: 1.4 }}>
+                    //                             <strong>Subject:</strong> {c.subject}, <strong>Issuer:</strong> {c.issuer}, <strong>有效期:</strong> {c.not_before} → {c.not_after}
+                    //                         </li>
+                    //                     ))}
+                    //                 </ul>
+                    //             ))}
+                    //             {/* {f.certificate_chain?.length > 0 && (
+                    //                 <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    //                     {f.certificate_chain.map((c, i) => (
+                    //                         <li key={i} style={{ lineHeight: 1.4 }}>
+                    //                             <strong>Subject CN:</strong> {c.subject}, 
+                    //                             <strong>Issuer CN:</strong> {c.issuer}, 
+                    //                             <strong>有效期:</strong> {c.not_before} → {c.not_after}
+                    //                             <br />
+                    //                             <small>
+                    //                                 SHA1: {c.sha1_fingerprint}<br />
+                    //                                 SHA256: {c.sha256_fingerprint}
+                    //                             </small>
+                    //                         </li>
+                    //                     ))}
+                    //                 </ul>
+                    //             )} */}
+
+                    //         </>
+                    //     );
+                    // }
+
                     else if (proto === "CERTIFICATE_INFO" && f.certificate_deployments?.length) {
-
+                        const chain = f.certificate_deployments[0].received_certificate_chain; // 取第一组部署
                         content = (
-                            <>
-                                {f.certificate_deployments.map((deploy, j) => (
-                                    <ul key={j} style={{ margin: 0, paddingLeft: 18 }}>
-                                        {deploy.received_certificate_chain.map((c, i) => (
-                                            <li key={i} style={{ lineHeight: 1.4 }}>
-                                                <strong>Subject:</strong> {c.subject}, <strong>Issuer:</strong> {c.issuer}, <strong>有效期:</strong> {c.not_before} → {c.not_after}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ))}
-                                {/* {f.certificate_chain?.length > 0 && (
-                                    <ul style={{ margin: 0, paddingLeft: 18 }}>
-                                        {f.certificate_chain.map((c, i) => (
-                                            <li key={i} style={{ lineHeight: 1.4 }}>
-                                                <strong>Subject CN:</strong> {c.subject}, 
-                                                <strong>Issuer CN:</strong> {c.issuer}, 
-                                                <strong>有效期:</strong> {c.not_before} → {c.not_after}
-                                                <br />
-                                                <small>
-                                                    SHA1: {c.sha1_fingerprint}<br />
-                                                    SHA256: {c.sha256_fingerprint}
-                                                </small>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )} */}
-
-                            </>
+                            <CertificateChain chain={chain} />
                         );
                     }
+
+
 
 
                     return (
-                        <div key={idx} style={{ marginTop: 0.75, padding: 0.75, background: "#1a1a1a", border: "1px solid #444", borderRadius: 6 }}>
+                        <div key={idx} style={{ marginTop: 0.75, padding: 0.75, background: "#81a7adff", border: "1px solid #444", borderRadius: 6 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                                 <h4 style={{ margin: 0 }}>{f.protocol}</h4>
-                                <span style={{ fontSize: 12, color: f.status === "COMPLETED" ? "#5bc889" : f.status === "ERROR" ? "tomato" : "#ccc" }}>
+                                <span style={{ fontSize: 12, color: f.status === "COMPLETED" ? "#0ba450ff" : f.status === "ERROR" ? "tomato" : "#ccc" }}>
                                     {f.status}
                                 </span>
                             </div>
@@ -250,7 +270,7 @@ export default function TlsAnalyzerPanel({ host, port }) {
 
 
     return (
-        <div style={{ marginTop: "1rem", padding: "1rem", backgroundColor: "#222", color: "#fff", borderRadius: 8 }}>
+        <div style={{ marginTop: "1rem", padding: "1rem", backgroundColor: "#81a7adff", color: "#fff", borderRadius: 8 }}>
             <div style={{ display: "flex", gap: 8 }}>
                 <button
                     onClick={handleDeepAnalyze}

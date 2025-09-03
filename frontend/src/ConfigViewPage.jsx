@@ -1000,33 +1000,6 @@ function ConfigViewPage() {
     };
   };
 
-  // const handleRetest = (item) => {
-  //   const { host, port, type } = item;
-
-  //   const ws = new WebSocket(
-  //     `${window.location.protocol === "https:" ? "wss" : "ws"}://localhost:8081/ws/testconnect?host=${host}&port=${port}&protocol=${type}`
-  //   );
-
-
-  //   setLiveLogs([]);
-  //   setLiveResult(null);
-  //   setTestingHost(`${type}://${host}:${port}`);
-
-  //   ws.onmessage = (event) => {
-  //     const msg = JSON.parse(event.data);
-  //     if (msg.type === "log") {
-  //       setLiveLogs((prev) => [...prev, msg.content]);
-  //     } else if (msg.type === "result") {
-  //       setLiveResult(msg.result);
-  //       ws.close();
-  //     }
-  //   };
-
-  //   ws.onerror = () => {
-  //     setLiveLogs((prev) => [...prev, "❌ Connection error."]);
-  //     ws.close();
-  //   };
-  // };
 
   const renderConnectionInfo = (info) => {
     if (!info || !info.success) return <span style={{ color: "red" }}>❌</span>;
@@ -1038,481 +1011,6 @@ function ConfigViewPage() {
       </div>
     );
   };
-
-  // const renderConnectDetailTable = () => {
-  //   if (!Array.isArray(connectDetails) || connectDetails.length === 0) return null;
-
-  //   return (
-  //     <div style={{ marginTop: "2rem" }}>
-  //       <h3>🔌 Actual Connection Test Results</h3>
-  //       <table style={{ width: "100%", borderCollapse: "collapse", color: "#eee" }}>
-  //         <thead>
-  //           <tr style={{ backgroundColor: "#2c3e50" }}>
-  //             <th>Protocol</th>
-  //             <th>Host</th>
-  //             <th>Port</th>
-  //             <th>Plain</th>
-  //             <th>STARTTLS</th>
-  //             <th>TLS</th>
-  //           </tr>
-  //         </thead>
-  //         <tbody>
-  //           {connectDetails.map((item, idx) => (
-  //             <tr
-  //               key={idx}
-  //               style={{ backgroundColor: idx % 2 === 0 ? "#34495e" : "#3d566e" }}
-  //             >
-  //               <td>{item.type}</td>
-  //               <td>
-  //                 {item.host}
-  //                 <button
-  //                   style={{ marginLeft: "8px", padding: "2px 6px" }}
-  //                   onClick={() => handleRetest(item, selectedMode)}
-  //                 >
-  //                   Retest
-  //                 </button>
-  //                 <select
-  //                   style={{ marginLeft: "8px" }}
-  //                   onChange={(e) => setSelectedMode(e.target.value)}
-  //                 >
-  //                   <option value="plain">Plain</option>
-  //                   <option value="starttls">STARTTLS</option>
-  //                   <option value="ssl">SSL/TLS</option>
-  //                 </select>
-  //               </td>
-
-  //               {/* <td>
-  //                 {item.host}
-  //                 <button
-  //                   style={{ marginLeft: "8px", padding: "2px 6px" }}
-  //                   onClick={() => handleRetest(item)}
-  //                 >
-  //                   Retest
-  //                 </button>
-  //               </td> */}
-  //               <td>{item.port}</td>
-  //               <td>{renderConnectionInfo(item.plain)}</td>
-  //               <td>{renderConnectionInfo(item.starttls)}</td>
-  //               <td>{renderConnectionInfo(item.tls)}</td>
-  //             </tr>
-  //           ))}
-  //         </tbody>
-  //       </table>
-
-  //       {/* 👇 Retest 的日志展示 */}
-  //       {testingHost && (
-  //         <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#222" }}>
-  //           <h4>🔍 Testing: {testingHost}</h4>
-  //           <div
-  //             style={{
-  //               maxHeight: "200px",
-  //               overflowY: "auto",
-  //               background: "#111",
-  //               padding: "1rem",
-  //               fontFamily: "monospace",
-  //               fontSize: "14px",
-  //             }}
-  //           >
-  //             {liveLogs.map((line, idx) => (
-  //               <div key={idx}>{line}</div>
-  //             ))}
-  //           </div>
-            
-  //           {liveResult && (
-  //             <div
-  //               style={{
-  //                 marginTop: "1rem",
-  //                 padding: "1rem",
-  //                 backgroundColor: "#333",
-  //                 border: "1px solid #666",
-  //               }}
-  //             >
-  //               <h4>✅ Final Result</h4>
-  //               {liveResult.success ? (
-  //                 <>
-  //                   <p>✅ 测试成功</p>
-  //                   <p><strong>TLS 版本：</strong>{liveResult.info?.version || "未知"}</p>
-  //                   <p><strong>加密套件：</strong>{liveResult.info?.cipher?.join(", ") || "N/A"}</p>
-
-  //                   {liveResult.info?.["tls ca"] && (
-  //                     <>
-  //                       <div style={{ marginTop: "1rem" }}>
-  //                         <h4
-  //                           onClick={() => setShowTlsCert((prev) => !prev)}
-  //                           style={{
-  //                             cursor: "pointer",
-  //                             color: "#e7ecf2ff",
-  //                             userSelect: "none",
-  //                           }}
-  //                         >
-  //                           🔐 查看服务器证书信息 {showTlsCert ? "▲" : "▼"}
-  //                         </h4>
-  //                         {showTlsCert && (
-  //                           <PeculiarCertificateViewer certificate={liveResult.info["tls ca"]} />
-  //                         )}
-  //                       </div>
-  //                       <a
-  //                         href={`data:text/plain;charset=utf-8,${encodeURIComponent(liveResult.info["tls ca"])}`}
-  //                         download={`certificate_${testingHost}.crt`}
-  //                         style={{
-  //                           display: "inline-block",
-  //                           marginTop: "1rem",
-  //                           backgroundColor: "#5bc889ff",
-  //                           color: "#fff",
-  //                           padding: "8px 12px",
-  //                           textDecoration: "none",
-  //                           borderRadius: "4px",
-  //                         }}
-  //                       >
-  //                         ⬇️ 下载服务器证书
-  //                       </a>
-  //                     </>
-  //                   )}
-  //                 </>
-  //               ) : (
-  //                 <>
-  //                   <p style={{ color: "red" }}>❌ 测试失败</p>
-  //                   <p><strong>错误信息：</strong>{liveResult.error}</p>
-  //                 </>
-  //               )}
-  //             </div>
-  //           )}
-
-
-  //           {/* {liveResult && (
-  //             <div
-  //               style={{
-  //                 marginTop: "1rem",
-  //                 padding: "1rem",
-  //                 backgroundColor: "#333",
-  //                 border: "1px solid #666",
-  //               }}
-  //             >
-  //               <h4>✅ Final Result</h4>
-  //               <pre style={{ whiteSpace: "pre-wrap", color: "#eee" }}>
-  //                 {JSON.stringify(liveResult, null, 2)}
-  //               </pre>
-  //             </div>
-  //           )} */}
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // };
-  // const renderConnectDetailTable = () => {
-  //   if (!Array.isArray(connectDetails) || connectDetails.length === 0) return null;
-
-  //   // // 每行独立模式
-  //   // const [rowModes, setRowModes] = useState({}); // key: idx, value: mode
-
-  //   return (
-  //     <div style={{ marginTop: "2rem" }}>
-  //       <h3>🔌 Actual Connection Test Results</h3>
-  //       <table style={{ width: "100%", borderCollapse: "collapse", color: "#eee" }}>
-  //         <thead>
-  //           <tr style={{ backgroundColor: "#2c3e50" }}>
-  //             <th>Protocol</th>
-  //             <th>Host</th>
-  //             <th>Port</th>
-  //             <th>Plain</th>
-  //             <th>STARTTLS</th>
-  //             <th>TLS</th>
-  //           </tr>
-  //         </thead>
-  //         <tbody>
-  //           {connectDetails.map((item, idx) => (
-  //             <tr
-  //               key={idx}
-  //               style={{ backgroundColor: idx % 2 === 0 ? "#34495e" : "#3d566e" }}
-  //             >
-  //               <td>{item.type}</td>
-  //               <td>
-  //                 {item.host}
-  //                 {/* 下拉在前，按钮在后 */}
-  //                 <select
-  //                   style={{ marginLeft: "8px" }}
-  //                   value={rowModes[idx] || "plain"}
-  //                   onChange={(e) =>
-  //                     setRowModes((prev) => ({ ...prev, [idx]: e.target.value }))
-  //                   }
-  //                 >
-  //                   <option value="plain">Plain</option>
-  //                   <option value="starttls">STARTTLS</option>
-  //                   <option value="ssl">SSL/TLS</option>
-  //                 </select>
-  //                 <button
-  //                   style={{ marginLeft: "8px", padding: "2px 6px" }}
-  //                   onClick={() => handleRetest(item, rowModes[idx] || "plain")}
-  //                 >
-  //                   Retest
-  //                 </button>
-  //               </td>
-  //               <td>{item.port}</td>
-  //               <td>{renderConnectionInfo(item.plain)}</td>
-  //               <td>{renderConnectionInfo(item.starttls)}</td>
-  //               <td>{renderConnectionInfo(item.tls)}</td>
-  //             </tr>
-  //           ))}
-  //         </tbody>
-  //       </table>
-
-  //       {/* 👇 Retest 的日志展示 */}
-  //       {testingHost && (
-  //         <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#222" }}>
-  //           <h4>
-  //             🔍 Testing: {testingHost}
-  //             {/* {testingPort && `:${testingPort}`} [{testingProtocol}, {testingMode}] */}
-  //           </h4>
-  //           <div
-  //             style={{
-  //               maxHeight: "200px",
-  //               overflowY: "auto",
-  //               background: "#111",
-  //               padding: "1rem",
-  //               fontFamily: "monospace",
-  //               fontSize: "14px",
-  //             }}
-  //           >
-  //             {liveLogs.map((line, idx) => (
-  //               <div key={idx}>{line}</div>
-  //             ))}
-  //           </div>
-
-  //           {liveResult && (
-  //             <div
-  //               style={{
-  //                 marginTop: "1rem",
-  //                 padding: "1rem",
-  //                 backgroundColor: "#333",
-  //                 border: "1px solid #666",
-  //               }}
-  //             >
-  //               <h4>✅ Final Result</h4>
-  //               {liveResult.success ? (
-  //                 <>
-  //                   <p>✅ 测试成功</p>
-  //                   <p><strong>TLS 版本：</strong>{liveResult.info?.version || "未知"}</p>
-  //                   <p><strong>加密套件：</strong>{liveResult.info?.cipher?.join(", ") || "N/A"}</p>
-
-  //                   {liveResult.info?.["tls ca"] && (
-  //                     <>
-  //                       <div style={{ marginTop: "1rem" }}>
-  //                         <h4
-  //                           onClick={() => setShowTlsCert((prev) => !prev)}
-  //                           style={{
-  //                             cursor: "pointer",
-  //                             color: "#e7ecf2ff",
-  //                             userSelect: "none",
-  //                           }}
-  //                         >
-  //                           🔐 查看服务器证书信息 {showTlsCert ? "▲" : "▼"}
-  //                         </h4>
-  //                         {showTlsCert && (
-  //                           <PeculiarCertificateViewer certificate={liveResult.info["tls ca"]} />
-  //                         )}
-  //                       </div>
-  //                       <a
-  //                         href={`data:text/plain;charset=utf-8,${encodeURIComponent(
-  //                           liveResult.info["tls ca"]
-  //                         )}`}
-  //                         download={`certificate_${testingHost}.crt`}
-  //                         style={{
-  //                           display: "inline-block",
-  //                           marginTop: "1rem",
-  //                           backgroundColor: "#5bc889ff",
-  //                           color: "#fff",
-  //                           padding: "8px 12px",
-  //                           textDecoration: "none",
-  //                           borderRadius: "4px",
-  //                         }}
-  //                       >
-  //                         ⬇️ 下载服务器证书
-  //                       </a>
-  //                     </>
-  //                   )}
-  //                 </>
-  //               ) : (
-  //                 <>
-  //                   <p style={{ color: "red" }}>❌ 测试失败</p>
-  //                   <p>
-  //                     <strong>错误信息：</strong>
-  //                     {liveResult.error || liveResult.info?.error?.join(", ") || "未知错误"}
-  //                   </p>
-
-  //                 </>
-  //               )}
-  //             </div>
-  //           )}
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // };
-
-  // const standardPorts = {
-  //   IMAP: { plain: 143, starttls: 143, ssl: 993 },
-  //   POP3: { plain: 110, starttls: 110, ssl: 995 },
-  //   SMTP: { plain: 25, starttls: 587, ssl: 465 },
-  // };
-
-  // const renderConnectDetailTable = () => {
-  //   if (!Array.isArray(connectDetails) || connectDetails.length === 0) return null;
-
-  //   // 容错：统一用大写 key 去查找标准端口映射
-  //   const getPortsMapping = (item) => {
-  //     const t = (item?.type || "").toString().toUpperCase();
-  //     return standardPorts[t] || null;
-  //   };
-
-  //   // 获取默认模式（如果端口与标准端口匹配则返回该模式，否则返回 "plain"）
-  //   const getDefaultMode = (item) => {
-  //     const mapping = getPortsMapping(item) || {};
-  //     const found = Object.entries(mapping).find(([m, p]) => Number(p) === Number(item.port));
-  //     return found ? found[0] : "plain";
-  //   };
-
-  //   // 根据模式返回推荐端口（如果 mapping 找不到则返回 undefined）
-  //   const getPortForMode = (item, mode) => {
-  //     const mapping = getPortsMapping(item);
-  //     return mapping ? mapping[mode] : undefined;
-  //   };
-
-  //   // 当用户在某行改模式时：更新 rowModes，并通过 setConnectDetails 更新该行 port（如果有推荐端口）
-  //   const handleModeChange = (idx, mode) => {
-  //     setRowModes(prev => ({ ...prev, [idx]: mode }));
-
-  //     setConnectDetails(prev => {
-  //       const copy = prev.map((it, i) => {
-  //         if (i !== idx) return it;
-  //         const recommended = getPortForMode(it, mode);
-  //         // 只在有推荐端口时更新端口，否则保留原端口（允许用户尝试非标准端口）
-  //         if (recommended !== undefined) {
-  //           return { ...it, port: recommended };
-  //         }
-  //         return it;
-  //       });
-  //       return copy;
-  //     });
-  //   };
-
-  //   return (
-  //     <div style={{ marginTop: "2rem" }}>
-  //       <h3>🔌 Actual Connection Test Results</h3>
-  //       <table style={{ width: "100%", borderCollapse: "collapse", color: "#eee" }}>
-  //         <thead>
-  //           <tr style={{ backgroundColor: "#2c3e50" }}>
-  //             <th>Protocol</th>
-  //             <th>Host</th>
-  //             <th>Port</th>
-  //             <th>Plain</th>
-  //             <th>STARTTLS</th>
-  //             <th>TLS</th>
-  //           </tr>
-  //         </thead>
-  //         <tbody>
-  //           {connectDetails.map((item, idx) => {
-  //             const defaultMode = getDefaultMode(item);
-  //             const currentMode = rowModes[idx] ?? defaultMode;
-
-  //             return (
-  //               <tr
-  //                 key={idx}
-  //                 style={{ backgroundColor: idx % 2 === 0 ? "#34495e" : "#3d566e" }}
-  //               >
-  //                 <td>{item.type}</td>
-  //                 <td>
-  //                   {item.host}
-  //                   {/* 永远显示三种模式供用户尝试 */}
-  //                   <select
-  //                     style={{ marginLeft: "8px" }}
-  //                     value={currentMode}
-  //                     onChange={(e) => handleModeChange(idx, e.target.value)}
-  //                   >
-  //                     <option value="plain">plain</option>
-  //                     <option value="starttls">starttls</option>
-  //                     <option value="ssl">ssl</option>
-  //                   </select>
-
-  //                   {/* 点击 Retest 时使用最新的 state（connectDetails[idx]）和 mode */}
-  //                   <button
-  //                     style={{ marginLeft: "8px", padding: "2px 6px" }}
-  //                     onClick={() =>
-  //                       handleRetest(connectDetails[idx], currentMode)
-  //                     }
-  //                   >
-  //                     Retest
-  //                   </button>
-  //                 </td>
-
-  //                 {/* 端口从 state 的 item.port 拿（已经在 handleModeChange 更新） */}
-  //                 <td>{item.port}</td>
-
-  //                 <td>{renderConnectionInfo(item.plain)}</td>
-  //                 <td>{renderConnectionInfo(item.starttls)}</td>
-  //                 <td>{renderConnectionInfo(item.tls)}</td>
-  //               </tr>
-  //             );
-  //           })}
-  //         </tbody>
-  //       </table>
-
-  //       {/* Retest 日志区域（保持你已有逻辑） */}
-  //       {testingHost && (
-  //         <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#222" }}>
-  //           <h4>🔍 Testing: {testingHost}</h4>
-  //           <div
-  //             style={{
-  //               maxHeight: "200px",
-  //               overflowY: "auto",
-  //               background: "#111",
-  //               padding: "1rem",
-  //               fontFamily: "monospace",
-  //               fontSize: "14px",
-  //             }}
-  //           >
-  //             {liveLogs.map((line, i) => (<div key={i}>{line}</div>))}
-  //           </div>
-
-  //           {liveResult && (
-  //             <div style={{ marginTop: "1rem", padding: "1rem", backgroundColor: "#333", border: "1px solid #666" }}>
-  //               <h4>✅ Final Result</h4>
-  //               {liveResult.success ? (
-  //                 <>
-  //                   <p>✅ 测试成功</p>
-  //                   <p><strong>TLS 版本：</strong>{liveResult.info?.version || "未知"}</p>
-  //                   <p><strong>加密套件：</strong>{liveResult.info?.cipher?.join(", ") || "N/A"}</p>
-  //                   {liveResult.info?.["tls ca"] && (
-  //                     <>
-  //                       <div style={{ marginTop: "1rem" }}>
-  //                         <h4 onClick={() => setShowTlsCert(prev => !prev)} style={{ cursor: "pointer", color: "#e7ecf2ff", userSelect: "none" }}>
-  //                           🔐 查看服务器证书信息 {showTlsCert ? "▲" : "▼"}
-  //                         </h4>
-  //                         {showTlsCert && <PeculiarCertificateViewer certificate={liveResult.info["tls ca"]} />}
-  //                       </div>
-  //                       <a
-  //                         href={`data:text/plain;charset=utf-8,${encodeURIComponent(liveResult.info["tls ca"])}`}
-  //                         download={`certificate_${testingHost}.crt`}
-  //                         style={{ display: "inline-block", marginTop: "1rem", backgroundColor: "#5bc889ff", color: "#fff", padding: "8px 12px", textDecoration: "none", borderRadius: "4px" }}
-  //                       >
-  //                         ⬇️ 下载服务器证书
-  //                       </a>
-  //                     </>
-  //                   )}
-  //                 </>
-  //               ) : (
-  //                 <>
-  //                   <p style={{ color: "red" }}>❌ 测试失败</p>
-  //                   <p><strong>错误信息：</strong>{liveResult.error || liveResult.info?.error?.join(", ") || "未知错误"}</p>
-  //                 </>
-  //               )}
-  //             </div>
-  //           )}
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // };
-  
 
   const [retestPorts, setRetestPorts] = useState({}); // Retest 对应端口
 
@@ -1535,26 +1033,29 @@ function ConfigViewPage() {
 
     return (
       <div style={{ marginTop: "2rem" }}>
-        <h3>🔌 Actual Connection Test Results</h3>
+        <h3 style={{ color: "#4da6ff", marginBottom: "1rem" }}>🔌 实际连接测试结果</h3>
         <table
           style={{
             width: "100%",
             borderCollapse: "collapse",
             color: "#eee",
-            fontFamily: "Comic Sans MS, Roboto, Arial, sans-serif", // 圆润字体
-            fontSize: "16px",
-            textAlign: "center" // 内容居中
+            fontFamily: '"Segoe UI", "Roboto", "Arial", sans-serif',
+            fontSize: "15px",
+            textAlign: "center",
+            border: "1px solid #444",
+            borderRadius: "8px",
+            overflow: "hidden"
           }}
         >
           <thead>
-            <tr style={{ backgroundColor: "#2c3e50" }}>
-              <th style={{ padding: "8px" }}>Protocol</th>
-              <th style={{ padding: "8px" }}>Host</th>
-              <th style={{ padding: "8px" }}>Port</th>
-              <th style={{ padding: "8px" }}>Plain</th>
-              <th style={{ padding: "8px" }}>STARTTLS</th>
-              <th style={{ padding: "8px" }}>TLS</th>
-              <th style={{ padding: "8px" }}>Retest 操作</th>
+            <tr style={{ backgroundColor: "#6395c6ff", color: "#fff" }}>
+              <th style={{ padding: "10px" }}>协议</th>
+              <th style={{ padding: "10px" }}>主机</th>
+              <th style={{ padding: "10px" }}>端口</th>
+              <th style={{ padding: "10px" }}>明文</th>
+              <th style={{ padding: "10px" }}>STARTTLS</th>
+              <th style={{ padding: "10px" }}>TLS</th>
+              <th style={{ padding: "10px" }}>重新测试</th>
             </tr>
           </thead>
           <tbody>
@@ -1565,7 +1066,7 @@ function ConfigViewPage() {
               const currentRetestPort = retestPorts[idx] ?? (standardPorts[item.type.toUpperCase()]?.[currentMode] || item.port);
 
               return (
-                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? "#34495e" : "#3d566e" }}>
+                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? "#7da6cfff" : "#5a8fc1ff" }}>
                   <td style={{ padding: "8px" }}>{item.type}</td>
                   <td style={{ padding: "8px" }}>{item.host}</td>
                   <td style={{ padding: "8px" }}>{item.port}</td> {/* 原始端口 */}
@@ -1614,19 +1115,25 @@ function ConfigViewPage() {
 
         {/* Retest 日志区域 */}
         {testingHost && (
-          <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#222" }}>
-            <h4>🔍 Testing: {testingHost}</h4>
+          <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#dee9efff" }}>
+            <h4>🔍 正在重新连接测试： {testingHost}</h4>
             <div
               style={{
                 maxHeight: "200px",
                 overflowY: "auto",
-                background: "#111",
+                background: "#d6dadcff",
                 padding: "1rem",
                 fontFamily: "monospace",
                 fontSize: "14px",
               }}
             >
-              {liveLogs.map((line, i) => (<div key={i}>{line}</div>))}
+              {/* {liveLogs.map((line, i) => (<div key={i}>{line}</div>))} */}
+              {liveLogs
+                .filter(line => !line.trim().startsWith("📄 {"))
+                .map((line, i) => (
+                  <div key={i}>{line}</div>
+                ))}
+
             </div>
 
             {liveResult && (
@@ -1634,68 +1141,22 @@ function ConfigViewPage() {
                 style={{
                   marginTop: "1rem",
                   padding: "1rem",
-                  backgroundColor: "#333",
+                  backgroundColor: "#cbd7dfff",
                   border: "1px solid #666",
                 }}
               >
-                <h4>✅ Final Result</h4>
+                <h4>🔄 重新测试结果</h4>
                 {liveResult.success ? (
                   <>
                     <p>✅ 测试成功</p>
                     <p><strong>TLS 版本：</strong>{liveResult.info?.version || "未知"}</p>
                     <p><strong>加密套件：</strong>{liveResult.info?.cipher?.join(", ") || "N/A"}</p>
-                    {/* 深度分析按钮 */}
-                    <button
-                      style={{
-                        marginTop: "1rem",
-                        backgroundColor: "#5bc889ff",
-                        color: "#fff",
-                        padding: "6px 12px",
-                        borderRadius: "4px",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "Arial, sans-serif",
-                        fontWeight: "bold"
-                      }}
-                        onClick={() => {
-                        // 设置分析目标
-                        let host, port;
-
-                        const match = testingHost.match(/^[a-z]+:\/\/([^:\s]+):(\d+)/i);
-                        if (match) {
-                          host = match[1];  
-                          port = parseInt(match[2], 10);  
-                          console.log("host:", host, "port:", port);
-                        } else {
-                          console.error("Failed to parse host and port from testingHost:", testingHost);
-                        }
-
-                        setCurrentHostForAnalysis(host);
-                        setCurrentPortForAnalysis(port);
-                        setShowTlsAnalyzer(prev => !prev);
-
-                      }}
-                    >
-                      {showTlsAnalyzer ? "隐藏深度分析" : "深度分析"}
-                    </button>
-
-                    {/* 深度分析面板 */}
-                    {showTlsAnalyzer && currentHostForAnalysis && currentPortForAnalysis && (
-                      <div style={{ marginTop: "1rem" }}>
-                        <TlsAnalyzerPanel 
-                          host={currentHostForAnalysis} 
-                          port={currentPortForAnalysis} 
-                          cipherSuites={liveResult.info?.cipher || []} // 可传密码套件
-                        />
-                      </div>
-                    )}
-
                     {liveResult.info?.["tls ca"] && (
                       <>
                         <div style={{ marginTop: "1rem" }}>
                           <h4
                             onClick={() => setShowTlsCert(prev => !prev)}
-                            style={{ cursor: "pointer", color: "#e7ecf2ff", userSelect: "none" }}
+                            style={{ cursor: "pointer", color: "#505861ff", userSelect: "none" }}
                           >
                             🔐 查看服务器证书信息 {showTlsCert ? "▲" : "▼"}
                           </h4>
@@ -1709,7 +1170,7 @@ function ConfigViewPage() {
                           style={{
                             display: "inline-block",
                             marginTop: "1rem",
-                            backgroundColor: "#5bc889ff",
+                            backgroundColor: "#6f99ccff",
                             color: "#fff",
                             padding: "8px 12px",
                             textDecoration: "none",
@@ -1719,6 +1180,48 @@ function ConfigViewPage() {
                           ⬇️ 下载服务器证书
                         </a>
                       </>
+                    )}
+                    {/* 深度分析按钮 */}
+                        <div style={{ marginTop: "1rem" }}>
+                          <button
+                            style={{
+                              backgroundColor: "#586c9bff",
+                              color: "#fff",
+                              padding: "6px 12px",
+                              borderRadius: "4px",
+                              border: "none",
+                              cursor: "pointer",
+                              fontFamily: "Arial, sans-serif",
+                              fontWeight: "bold",
+                            }}
+                            onClick={() => {
+                              let host, port;
+                              const match = testingHost.match(/^[a-z]+:\/\/([^:\s]+):(\d+)/i);
+                              if (match) {
+                                host = match[1];
+                                port = parseInt(match[2], 10);
+                                console.log("host:", host, "port:", port);
+                              } else {
+                                console.error("Failed to parse host and port from testingHost:", testingHost);
+                              }
+                              setCurrentHostForAnalysis(host);
+                              setCurrentPortForAnalysis(port);
+                              setShowTlsAnalyzer(prev => !prev);
+                            }}
+                          >
+                            {showTlsAnalyzer ? "隐藏深度分析" : "深度分析"}
+                          </button>
+                        </div>
+
+                    {/* 深度分析面板 */}
+                    {showTlsAnalyzer && currentHostForAnalysis && currentPortForAnalysis && (
+                      <div style={{ marginTop: "1rem" }}>
+                        <TlsAnalyzerPanel 
+                          host={currentHostForAnalysis} 
+                          port={currentPortForAnalysis} 
+                          cipherSuites={liveResult.info?.cipher || []} // 可传密码套件
+                        />
+                      </div>
                     )}
                   </>
                 ) : (
@@ -1744,9 +1247,9 @@ function ConfigViewPage() {
       <div style={{ marginTop: "2rem" }}>
         <h3
           onClick={() => setShowCertChain((prev) => !prev)}
-          style={{ cursor: "pointer", color: "#8ac6ff", userSelect: "none" }}
+          style={{ cursor: "pointer", color: "#52a1ebff", userSelect: "none" }}
         >
-          🔐 Certificate Chain {showCertChain ? "▲" : "▼"}
+          🔐 配置服务器证书链 {showCertChain ? "▲" : "▼"}
         </h3>
         {showCertChain && (
           <>
@@ -1759,7 +1262,7 @@ function ConfigViewPage() {
                     marginRight: "8px",
                     padding: "4px 10px",
                     backgroundColor: activeCertIdx === idx ? "#007bff" : "#ddd",
-                    color: activeCertIdx === idx ? "#fff" : "#000",
+                    color: activeCertIdx === idx ? "#fff" : "#974646ff",
                     border: "none",
                     borderRadius: "4px",
                     cursor: "pointer",
@@ -1777,25 +1280,27 @@ function ConfigViewPage() {
   };
 
   return (
-    <div style={{ backgroundColor: "#111", minHeight: "100vh", padding: "2rem", color: "#fff" }}>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", padding: "2rem", color: "#222" }}>
       {/* 只有 autodiscover 或 autoconfig 显示配置块 */}
       {(mech === "autodiscover" || mech === "autoconfig") && (
         <>
-          <h2>📄 Configuration from Method</h2>
+          <h2 style={{ color: "#4da6ff", marginBottom: "1rem" }}>📄 配置文件内容</h2>
           <p>
-            <strong>Requested URI:</strong> {uri}
+            <strong style={{ color: "#b8c4cbff" }}>请求的 URI：</strong> <span style={{ color: "#9ad1ff" }}>{uri}</span>
           </p>
 
           <pre
             style={{
-              background: "#1e1e1e",
-              color: "#eee",
+              background: "#f9fbfd",
+              color: "#2d2d2d",
               padding: "20px",
               borderRadius: "8px",
               whiteSpace: "pre-wrap",
               maxHeight: "80vh",
               overflowY: "auto",
-              border: "1px solid #444",
+              border: "1px solid #ccc",
+              fontFamily: `"Fira Code", "Source Code Pro", Menlo, Consolas, monospace`,
+              fontSize: "0.95rem",
             }}
           >
             {configContent}
@@ -1808,15 +1313,18 @@ function ConfigViewPage() {
               style={{
                 display: "inline-block",
                 marginTop: "1rem",
-                backgroundColor: "#3498db",
+                backgroundColor: "#1a73e8",
                 color: "#fff",
                 padding: "10px 15px",
                 textDecoration: "none",
-                borderRadius: "4px",
+                borderRadius: "6px",
                 fontWeight: "bold",
+                transition: "background 0.3s",
               }}
+              onMouseOver={(e) => (e.target.style.backgroundColor = "#155ab6")}
+              onMouseOut={(e) => (e.target.style.backgroundColor = "#1a73e8")}
             >
-              ⬇️ Download Configuration
+              ⬇️  下 载 配 置 文 件
             </a>
           )}
         </>
@@ -1825,18 +1333,18 @@ function ConfigViewPage() {
       {/* ✅ 配置信息卡片展示 */}
       {Array.isArray(portsUsage) && portsUsage.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
-          <h4 style={{ marginBottom: "1rem" }}>🔌 配置信息概况</h4>
+          <h3 style={{ marginBottom: "1rem", color: "#1a73e8" }}>🔌 配置信息概况</h3>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
             {portsUsage.map((item, idx) => (
               <div
                 key={idx}
                 style={{
-                  backgroundColor: "#7ba8c6ff",
-                  color: "#fff",
+                  backgroundColor: "#f0f7ff",
+                  color: "#222",
                   padding: "1rem",
                   borderRadius: "12px",
-                  boxShadow: "0 2px 8px rgba(85, 136, 207, 0.3)",
-                  border: "1px solid #555",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+                  border: "1px solid #d0e3f0",
                   minWidth: "220px",
                   flex: "1",
                   maxWidth: "280px",
@@ -1880,49 +1388,6 @@ function ConfigViewPage() {
       {renderCertChain()}
     </div>
   );
-
-  // return (
-  //   <div style={{ backgroundColor: "#111", minHeight: "100vh", padding: "2rem", color: "#fff" }}>
-  //     <h2>📄 Configuration from Method</h2>
-  //     <p>
-  //       <strong>Requested URI:</strong> {uri}
-  //     </p>
-
-  //     <pre
-  //       style={{
-  //         background: "#1e1e1e",
-  //         color: "#eee",
-  //         padding: "20px",
-  //         borderRadius: "8px",
-  //         whiteSpace: "pre-wrap",
-  //         maxHeight: "80vh",
-  //         overflowY: "auto",
-  //         border: "1px solid #444",
-  //       }}
-  //     >
-  //       {configContent}
-  //     </pre>
-
-  //     <a
-  //       href={`data:text/plain;charset=utf-8,${encodeURIComponent(configContent)}`}
-  //       download={`config_from_${encodeURIComponent(uri || "unknown")}.xml`}
-  //       style={{
-  //         display: "inline-block",
-  //         marginTop: "1rem",
-  //         backgroundColor: "#3498db",
-  //         color: "#fff",
-  //         padding: "10px 15px",
-  //         textDecoration: "none",
-  //         borderRadius: "4px",
-  //       }}
-  //     >
-  //       ⬇️ Download Configuration
-  //     </a>
-
-  //     {renderConnectDetailTable()}
-  //     {renderCertChain()}
-  //   </div>
-  // );
 }
 
 export default ConfigViewPage;

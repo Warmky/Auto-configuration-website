@@ -234,7 +234,7 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.x509.oid import NameOID
 import logging
 from sslyze import (
@@ -347,13 +347,19 @@ def run_tls_scan(host: str, port: int):
                             except Exception:
                                 sha256 = None
 
+                            try:
+                                pem = cert.public_bytes(serialization.Encoding.PEM).decode()
+                            except Exception:
+                                pem = None
+
                             return {
                                 "subject": str(cert.subject),
                                 "issuer": str(cert.issuer),
                                 "not_before": cert.not_valid_before.isoformat(),
                                 "not_after": cert.not_valid_after.isoformat(),
                                 "sha1_fingerprint": sha1,
-                                "sha256_fingerprint": sha256
+                                "sha256_fingerprint": sha256,
+                                "pem": pem  # 新增字段
                             }
 
                         def serialize_deployment(deploy):
