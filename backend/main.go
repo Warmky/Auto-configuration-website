@@ -2485,6 +2485,7 @@
 package main
 
 import (
+	"autodiscover-checker/Logic"
 	"bufio"
 	"bytes"
 	"crypto/dsa"
@@ -3254,6 +3255,8 @@ func main() {
 
 	// 静态文件托管
 	http.Handle("/downloads/", http.StripPrefix("/downloads/", http.FileServer(http.Dir("downloads"))))
+
+	http.HandleFunc("/api/dns-security-scan", Logic.HandleDnsSecurityScan)
 
 	// 启用 CORS
 	corsHandler := cors.Default().Handler(http.DefaultServeMux)

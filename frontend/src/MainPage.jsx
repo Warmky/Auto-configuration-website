@@ -2249,7 +2249,7 @@ function MainPage() {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10vh", marginBottom: "2rem" }}>
-            <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#799cc8ff" }}>邮件自动化配置检测</h1>
+            <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#29323eff" }}>邮件自动化配置检测</h1>
 
             <div>
                 <input
@@ -2273,7 +2273,7 @@ function MainPage() {
                         padding: "1rem",
                         fontSize: "1.2rem",
                         borderRadius: "8px",
-                        backgroundColor: "#93b8d0ff",
+                        backgroundColor: "#3c71cdff",
                         color: "white",
                         border: "none",
                         cursor: "pointer",
@@ -2360,7 +2360,7 @@ function MainPage() {
 
             <CSVUploadForm />
 
-            <h2 style={{ marginTop: "3rem", color: "#688ebcff" }}>历史查询</h2>
+            <h2 style={{ marginTop: "3rem", color: "#29394dff" }}>历史查询</h2>
             {recentlySeen.length > 0 ? (
                 <ul>
                     {recentlySeen.map((item, index) => (
@@ -2437,21 +2437,21 @@ function CSVUploadForm() {
 
     return (
         <div style={{ marginBottom: "30px", padding: "20px", textAlign: "center" }}>
-            <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "#688ebcff" }}>📄 批量域名检测</h3>
+            <h3 style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "#29394dff" }}>📄 批量域名检测</h3>
             
             <label 
                 style={{ 
                     display: "inline-block",
                     padding: "10px 20px",
-                    backgroundColor: "#abd1e9ff",
+                    backgroundColor: "#5daed7ff",
                     color: "white",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontWeight: "bold",
                     transition: "background 0.3s"
                 }}
-                onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
-                onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
+                onMouseOver={(e) => (e.target.style.backgroundColor = "#3c71cdff")}
+                onMouseOut={(e) => (e.target.style.backgroundColor = "#6d92cbff")}
             >
                 选择 CSV 文件
                 <input 
