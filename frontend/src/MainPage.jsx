@@ -1214,6 +1214,90 @@ function MainPage() {
     const firstAvailable = mechanisms.find(m => results[m]) || mechanisms[0];
     const [currentMech, setCurrentMech] = useState(firstAvailable);
 
+    // 9.9修改搜索框提示用户输入哪些可以查询到较有效的配置
+    const [displayText, setDisplayText] = useState("");
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const [displayPlaceholder, setDisplayPlaceholder] = useState(""); // 实际展示的 placeholder
+    const [isPlaceholderFrozen, setIsPlaceholderFrozen] = useState(false);
+
+    const placeholders = [
+        { display: "请输入您的邮件地址：例如 user@example.com", value: "user@example.com" },
+        { display: "Alice@qq.com", value: "Alice@qq.com" },
+        { display: "Bob@163.com", value: "Bob@163.com" },
+        { display: "xxx@gmail.com", value: "xxx@gmail.com" },
+        { display: "test@yandex.com", value: "test@yandex.com" },
+        { display: "admin@outlook.com", value: "admin@outlook.com" },
+    ];
+
+    // 每 3 秒切换到下一个（如果没有冻结）
+    useEffect(() => {
+        if (isPlaceholderFrozen) return; // ❌ 冻结后停止轮播
+
+        const interval = setInterval(() => {
+            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [isPlaceholderFrozen]);
+
+    // placeholder 轮播
+    useEffect(() => {
+        if (isPlaceholderFrozen) return; // 冻结时停止
+        const interval = setInterval(() => {
+        setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [isPlaceholderFrozen]);
+    
+    // 更新展示 placeholder
+    useEffect(() => {
+        if (!isPlaceholderFrozen) {
+        setDisplayPlaceholder(placeholders[placeholderIndex]);
+        }
+    }, [placeholderIndex, isPlaceholderFrozen]);
+
+    // 点击检测时
+    const handleClick = () => {
+        const currentPlaceholder = placeholders[placeholderIndex];
+        const targetEmail = email.trim() || currentPlaceholder.value;
+        handleSearch(targetEmail);
+
+        // 冻结 placeholder（固定显示）
+        setIsPlaceholderFrozen(true);
+        setEmail(targetEmail); // ⚡ 把值写到 input 里（黑色文字）
+    };
+
+    // 输入框聚焦：恢复轮播
+    const handleFocus = () => {
+        if (isPlaceholderFrozen) {
+        setIsPlaceholderFrozen(false);
+        setEmail(""); // 清空输入框，恢复 placeholder 轮播
+        }
+    };
+    // useEffect(() => {
+    //     let currentIndex = 0;
+    //     let currentPlaceholder = placeholders[placeholderIndex];
+    //     setDisplayText("");
+    
+    //     const typing = setInterval(() => {
+    //     setDisplayText((prev) => {
+    //         if (currentIndex <= currentPlaceholder.length) {
+    //             currentIndex++;
+    //             return currentPlaceholder.slice(0, currentIndex);
+    //         } else {
+    //             clearInterval(typing);
+    //             // 停顿一会儿再切换到下一个
+    //             setTimeout(() => {
+    //                 setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    //             }, 3000);
+    //             return prev;
+    //         }
+    //     });
+    //     }, 100); // 打字速度 100ms/字符
+    
+    //     return () => clearInterval(typing);
+    // }, [placeholderIndex]);
+
     const certLabelMap = {
         IsTrusted: "是否可信",
         VerifyError: "验证错误",
@@ -1276,8 +1360,13 @@ function MainPage() {
             .catch((err) => console.error("Failed to fetch recent scans:", err));
     };
 
-    const handleSearch = async () => {
-        if (!email) {
+    const handleSearch = async (targetEmail) => {  //9.10
+        // if (!email) {
+        //     setErrors("请输入邮箱地址");
+        //     return;
+        // } //9.10
+        const finalEmail = targetEmail || email.trim();
+        if (!finalEmail) {        
             setErrors("请输入邮箱地址");
             return;
         }
@@ -1313,7 +1402,7 @@ function MainPage() {
         };
 
         try {
-            const response = await fetch(`http://localhost:8081/checkAll?email=${email}`);
+            const response = await fetch(`http://localhost:8081/checkAll?email=${finalEmail}`); //9.10
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -2248,44 +2337,95 @@ function MainPage() {
     const hasAnyResult = Object.values(results).some((r) => r && Object.keys(r).length > 0);{/*7.28 */}
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10vh", marginBottom: "2rem" }}>
-            <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#29323eff" }}>邮件自动化配置检测</h1>
+        // <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10vh", marginBottom: "2rem" }}>
+        //     <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#29323eff" }}>邮件自动化配置检测</h1>
 
-            <div>
+        //     <div>
+        //         <input
+        //             type="text"
+        //             value={email}
+        //             onChange={(e) => setEmail(e.target.value)}
+        //             placeholder="请输入您的邮件地址"
+        //             style={{
+        //                 padding: "1rem",
+        //                 width: "400px",
+        //                 fontSize: "1.2rem",
+        //                 borderRadius: "8px",
+        //                 border: "1px solid #ccc",
+        //                 outline: "none"
+        //             }}
+        //         />
+        //         <button
+        //             onClick={handleSearch}
+        //             style={{
+        //                 marginLeft: "1rem",
+        //                 padding: "1rem",
+        //                 fontSize: "1.2rem",
+        //                 borderRadius: "8px",
+        //                 backgroundColor: "#3c71cdff",
+        //                 color: "white",
+        //                 border: "none",
+        //                 cursor: "pointer",
+        //                 fontWeight: "bold",
+        //                 transition: "background 0.3s"
+        //             }}
+        //             onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
+        //             onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
+        //         >
+        //             开始检测
+        //         </button>
+        //     </div> //9.9
+        <div 
+            style={{
+                marginTop: "10vh",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                padding: "0 1rem", // 手机端留边
+            }}
+        >
+            <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#29323eff" }}>
+                邮件自动化配置检测
+            </h1>
+
+            <div style={{ maxWidth: "600px", width: "100%" }}>
                 <input
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="请输入您的邮件地址"
+                    onFocus={handleFocus}   // ⚡ 聚焦时恢复轮播
+                    placeholder={isPlaceholderFrozen ? "" : placeholders[placeholderIndex].display} // 冻结时不用 placeholder
                     style={{
                         padding: "1rem",
                         width: "400px",
                         fontSize: "1.2rem",
                         borderRadius: "8px",
                         border: "1px solid #ccc",
-                        outline: "none"
+                        outline: "none",
+                        color: "#000",
                     }}
                 />
                 <button
-                    onClick={handleSearch}
-                    style={{
-                        marginLeft: "1rem",
-                        padding: "1rem",
-                        fontSize: "1.2rem",
-                        borderRadius: "8px",
-                        backgroundColor: "#3c71cdff",
-                        color: "white",
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                        transition: "background 0.3s"
-                    }}
-                    onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
-                    onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
+                onClick={handleClick}
+                style={{
+                    marginLeft: "1rem",
+                    padding: "1rem",
+                    fontSize: "1.2rem",
+                    borderRadius: "8px",
+                    backgroundColor: "#3c71cdff",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    transition: "background 0.3s",
+                }}
+                onMouseOver={(e) => (e.target.style.backgroundColor = "#2e4053")}
+                onMouseOut={(e) => (e.target.style.backgroundColor = "#3a506b")}
                 >
-                    开始检测
+                开始检测
                 </button>
             </div>
+        
 
             {/* {loading && (
                 <div style={{ marginTop: "1rem", width: "400px", textAlign: "center" }}>
