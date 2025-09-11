@@ -1186,6 +1186,8 @@ import {
 import { PeculiarCertificateViewer } from '@peculiar/certificates-viewer-react';
 import LinearProgress from '@mui/material/LinearProgress';
 import "./App.css";
+import { checkInternalDiff } from "./checkInternalDiff";//9.11
+
 
 
 function MainPage() {
@@ -1607,115 +1609,296 @@ function MainPage() {
         return comparisonMap;
     };
     
+    //9.11
+    // 评级函数：根据分数给 A/B/C...
+    const getGrade = (score) => {
+        if (score >= 90) return "A";
+        if (score >= 50) return "B";
+        if (score >= 30) return "C";
+        return "F";
+    };
 
+    // 简单 Accordion 组件
+    const Accordion = ({ title, children }) => {
+        const [open, setOpen] = React.useState(false);
+        return (
+            <div style={{ marginBottom: "10px" }}>
+                <div
+                    style={{
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        padding: "6px 10px",
+                        background: "#f7f7f7",
+                        border: "1px solid #ddd",
+                        borderRadius: "6px",
+                    }}
+                    onClick={() => setOpen(!open)}
+                >
+                    {title} {open ? "▲" : "▼"}
+                </div>
+                {open && (
+                    <div
+                        style={{
+                            padding: "10px",
+                            border: "1px solid #ddd",
+                            borderTop: "none",
+                            background: "#fafafa",
+                            borderRadius: "0 0 6px 6px",
+                        }}
+                    >
+                        {children}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const preprocessResults = (results) => {  //9.11
+        Object.entries(results).forEach(([mech, res]) => {
+          if (res) {
+            res.hasInternalDiff = checkInternalDiff(res);
+          }
+        });
+      };
+
+    // 小模块显示文字，前置勾叉
+    const renderModuleText = (label, score) => (
+        <span style={{ fontWeight: "bold", marginRight: "6px", color:"#555" }}>
+            {score === 100 ? "✅" : "❌"} {label}
+        </span>
+    );
+
+    const CollapsibleModule = ({ label, score, children }) => {
+        const [open, setOpen] = useState(false);
+        return (
+            <div
+                style={{
+                    border: "1px solid #fff",  // 白色边框
+                    borderRadius: "8px",
+                    padding: "10px",
+                    marginBottom: "10px",
+                    backgroundColor: "#fff", // 可以是白底，如果页面背景深色，可以微调
+                }}
+            >
+                {/* 标题行 */}
+                <div
+                    style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+                    onClick={() => setOpen(!open)}
+                >
+                    {renderModuleText(label, score)}
+                    <span style={{ marginLeft: "6px", color: "#333" }}>{open ? "▲" : "▼"}</span>
+                </div>
+    
+                {/* 折叠内容 */}
+                {open && <div style={{ marginTop: "8px" }}>{children}</div>}
+            </div>
+        );
+    };
+    
+    
+    //9.11
 
 
     // 当前机制内容渲染函数7.28
     const renderMechanismContent = (mech) => {
         const result = results[mech];
-        //9.10_2 确保compare Tab一直会出现
-        // renderMechanismContent compare 分支
-        if (mech === "compare") {
-            const comparisonMap = comparePortsUsage(results);
-        
-            const thStyle = {
-            border: "1px solid #ccc",
-            padding: "8px",
-            background: "#f7f7f7",
-            minWidth: "120px",
-            textAlign: "center",
-            };
-            const tdStyle = {
-            border: "1px solid #ccc",
-            padding: "8px",
-            textAlign: "center",
-            };
-        
-            return (
-            <div style={{ marginTop: "2rem" }}>
-                {/* 说明文案 */}
-                <div
-                style={{
-                    backgroundColor: "#f0f8ff",
-                    padding: "10px",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    marginBottom: "15px",
-                    fontSize: "14px",
-                    lineHeight: "1.6",
-                }}
-                >
-                <p>🔍 <b>Compare 分析说明：</b></p>
-                <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
-                    <li>Compare 用于比较 <b>Autodiscover / Autoconfig / SRV</b> 三种机制返回的配置。</li>
-                    <div>
-                        ✅ <span style={{ color: "#28a745", fontWeight: "bold" }}>绿色</span> 表示一致；
-                        ❌ <span style={{ color: "#dc3545", fontWeight: "bold" }}>红色</span> 表示不一致。
-                    </div>
+        //9.11
+        preprocessResults(results);
 
-                    <li>配置不一致可能导致客户端配置错误或其他安全隐患，请重点关注。</li>
-                </ul>
-                </div>
-        
-                <h4 style={{ marginBottom: "1rem" }}>⚖️ 配置比较结果</h4>
-                <table
-                style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                }}
-                >
-                <thead>
-                    <tr>
-                    <th style={thStyle}>协议</th>
-                    <th style={thStyle}>端口</th>
-                    <th style={thStyle}>机制</th>
-                    <th style={thStyle}>主机</th>
-                    <th style={thStyle}>SSL类型</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {Object.entries(comparisonMap).map(([key, mechData], idx) => {
-                    // 检查一致性
-                    const fields = ["host", "ssl"];
-                    const isConsistent = fields.every((field) => {
-                        const values = Object.values(mechData)
+        if (mech === "compare") {
+            const comparisonMap = comparePortsUsage(results); //这里比较的是不同机制间
+    
+            // 一致性评分
+            let consistencyScore = 100;
+            Object.entries(comparisonMap).forEach(([_, mechData]) => {
+                const fields = ["host", "ssl"];
+                const isConsistent = fields.every((field) => {
+                    const values = Object.values(mechData)
                         .map((m) => m[field])
                         .filter(Boolean);
-                        return (
-                        values.length <= 1 || values.every((v) => v === values[0])
-                        );
-                    });
-        
-                    return Object.entries(mechData).map(([mech, item], rowIdx) => (
-                        <tr
-                        key={`${idx}-${rowIdx}`}
-                        style={{
-                            backgroundColor: isConsistent ? "#f0f0f0" : "#f8d7da",
-                        }}
-                        >
-                        {rowIdx === 0 && (
-                            <>
-                            <td style={tdStyle} rowSpan={Object.keys(mechData).length}>
-                                {item.protocol}
-                            </td>
-                            <td style={tdStyle} rowSpan={Object.keys(mechData).length}>
-                                {item.port}
-                            </td>
-                            </>
-                        )}
-                        <td style={tdStyle}>{mech}</td>
-                        <td style={tdStyle}>{item.host}</td>
-                        <td style={tdStyle}>{item.ssl}</td>
-                        </tr>
-                    ));
-                    })}
-                </tbody>
-                </table>
-            </div>
+                    return values.length <= 1 || values.every((v) => v === values[0]);
+                });
+                if (!isConsistent) consistencyScore = 50;
+            });
+            // 考虑机制内部不一致
+            Object.entries(results).forEach(([mech, res]) => {
+                if (res?.hasInternalDiff) {
+                    consistencyScore = 30; // 🚨 内部不一致，优先判定为不一致
+                }
+            });
+
+    
+            // 配置安全性评分（取平均）
+            const mechScores = ["autodiscover", "autoconfig", "srv"]//这里应该是scores["cert_score"]
+                .map(m => results[m]?.score?.overall || 0)
+                .filter(s => s > 0);
+            const overallConfigScore = mechScores.length
+                ? Math.round(mechScores.reduce((a, b) => a + b, 0) / mechScores.length)
+                : 0;
+    
+            // 连接安全性（取最低）
+            const connectScores = ["autodiscover", "autoconfig", "srv"]//scores["connect_score"] = connectScores["Overall_Connection_Score"].(int)
+                .map(m => results[m]?.score?.connect_score || 0)
+                .filter(s => s > 0);
+            const unifiedConnectScore = connectScores.length
+                ? Math.min(...connectScores)
+                : 0;
+    
+            // 大评级框
+            const gradeBox = (score) => (
+                <div style={{
+                    width: "100px",
+                    height: "100px",
+                    borderRadius: "10px",
+                    border: "2px solid #333",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                    background: score === 100 ? "#2ecc71" : score === 50 ? "#f1c40f" : "#e74c3c",
+                    color: "#fff",
+                    marginRight: "20px"
+                }}>
+                    {getGrade(score)}
+                </div>
+            );
+
+
+    
+            return (
+                <div style={{ marginTop: "2rem" }}>
+                    <h3 style={{ marginBottom: "15px" }}>📊 Compare 总览</h3>
+    
+                {/* 上方主题分界线 */}
+                <div style={{
+                    borderTop: "2px solid #333",
+                    paddingTop: "10px",
+                    marginBottom: "20px",
+                    display: "flex",
+                    alignItems: "center"
+                }}>
+                    <span style={{ fontSize: "32px", marginRight: "10px" }}>🛡️</span>
+                    <h3 style={{ margin: 0, color: "#333" }}>配置获取过程安全性</h3>
+                </div>
+
+                {/* 主体内容 */}
+                <div style={{ display: "flex", alignItems: "flex-start", marginBottom: "20px" }}>
+                    {gradeBox(overallConfigScore, 100)} {/* 左边大评级框，增大尺寸 */}
+
+                    {/* 右边两个模块 */}
+                    <div style={{ flex: 1 }}>
+                        {/* 上模块：配置信息差异性 */}
+                        <CollapsibleModule label="配置信息差异性" score={consistencyScore}>
+                            <ul style={{ margin: 0, paddingLeft: "18px", color: "#333" }}>
+                                {Object.entries(results).map(([mech, res]) => {
+                                    if (res?.hasInternalDiff) {
+                                        return <li key={mech}>机制 {mech} 不同路径存在不同配置</li>;
+                                    }
+                                    return null;
+                                })}
+                                {consistencyScore === 50 && <li>不同机制之间存在配置差异</li>}
+                                {consistencyScore === 100 && <li>所有机制一致</li>}
+                            </ul>
+                        </CollapsibleModule>
+
+                        {/* 下模块：配置获取过程安全性 */}
+                        <CollapsibleModule label="配置获取过程安全性" score={overallConfigScore}>
+                            <p style={{ fontSize: "14px", color: "#333", margin: 0 }}>
+                                {overallConfigScore >= 80
+                                    ? "过程安全，证书可信且 DNSSEC 有效"
+                                    : overallConfigScore >= 60
+                                        ? "过程存在部分安全风险"
+                                        : "过程存在安全问题，请检查证书或 DNS 配置"}
+                            </p>
+                        </CollapsibleModule>
+                    </div>
+                </div>
+
+
+                {/* 表格详情：直接显示，不折叠 */}
+                <div style={{ marginBottom: "20px" }}>
+                    <h4 style={{ marginBottom: "10px", color: "#333" }}>⚖️ 配置比较详情（不同机制间差异）</h4>
+                    <table style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        tableLayout: "fixed",
+                        color: "#333"
+                    }}>
+                        <thead>
+                            <tr>
+                                <th style={{ border: "1px solid #ccc", padding: "8px", background: "#f7f7f7" }}>协议</th>
+                                <th style={{ border: "1px solid #ccc", padding: "8px", background: "#f7f7f7" }}>端口</th>
+                                <th style={{ border: "1px solid #ccc", padding: "8px", background: "#f7f7f7" }}>机制</th>
+                                <th style={{ border: "1px solid #ccc", padding: "8px", background: "#f7f7f7" }}>主机</th>
+                                <th style={{ border: "1px solid #ccc", padding: "8px", background: "#f7f7f7" }}>SSL类型</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(comparisonMap).map(([key, mechData], idx) => {
+                                const fields = ["host", "ssl"];
+                                const isConsistent = fields.every((field) => {
+                                    const values = Object.values(mechData).map((m) => m[field]).filter(Boolean);
+                                    return values.length <= 1 || values.every((v) => v === values[0]);
+                                });
+
+                                return Object.entries(mechData).map(([mech, item], rowIdx) => (
+                                    <tr key={`${idx}-${rowIdx}`} style={{ backgroundColor: isConsistent ? "#f0f0f0" : "#f8d7da" }}>
+                                        {rowIdx === 0 && (
+                                            <>
+                                                <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }} rowSpan={Object.keys(mechData).length}>{item.protocol}</td>
+                                                <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }} rowSpan={Object.keys(mechData).length}>{item.port}</td>
+                                            </>
+                                        )}
+                                        <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>{mech}</td>
+                                        <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>{item.host}</td>
+                                        <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>{item.ssl}</td>
+                                    </tr>
+                                ));
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                
+
+                {/* 连接安全性评级模块 */}
+                <div style={{ marginTop: "20px" }}>
+                    {/* 上方主题分界线 */}
+                    <div style={{
+                        borderTop: "2px solid #333",
+                        paddingTop: "10px",
+                        marginBottom: "10px",
+                        display: "flex",
+                        alignItems: "center"
+                    }}>
+                        <span style={{ fontSize: "32px", marginRight: "10px" }}>🔒</span>
+                        <h3 style={{ margin: 0, color: "#333" }}>连接安全性</h3>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "flex-start" }}>
+                        {gradeBox(unifiedConnectScore, 100)} {/* 左边大评级框，增大尺寸 */}
+
+                        <div style={{ flex: 1 }}>
+                            <CollapsibleModule label="连接提示" score={unifiedConnectScore}>
+                                <ul style={{ margin: 0, paddingLeft: "18px", color: "#333" }}>
+                                    {["autodiscover", "autoconfig", "srv"].map(m => {
+                                        const score = results[m]?.score?.connect_score || 0;
+                                        if (score < 100) {
+                                            return <li key={m}>{m} 机制连接存在风险</li>;
+                                        }
+                                        return null;
+                                    })}
+                                    {unifiedConnectScore === 100 && <li>所有机制连接安全</li>}
+                                </ul>
+                            </CollapsibleModule>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
             );
         }
-        
             
         if (!result && Object.keys(results).length === 0) return null;
         if (!result) return <p style={{ color: "gray" }}>No data for {mech}</p>;
@@ -1741,16 +1924,9 @@ function MainPage() {
                         <table style={tableStyle}>
                             <thead>
                                 <tr>
-                                    {/* <th style={thStyle}>Method</th>
-                                    <th style={thStyle}>Index</th>
-                                    <th style={thStyle}>URI</th>
-                                    <th style={thStyle}>Config</th>
-                                    <th style={thStyle}>Encrypted</th>
-                                    <th style={thStyle}>Standard</th>
-                                    <th style={thStyle}>Score</th>
-                                    <th style={thStyle}>View</th> */}
+                                    {/* 9.11 */}
                                     <th style={thStyle}>途径</th>
-                                    <th style={thStyle}>序号</th>
+                                    {/* <th style={thStyle}>序号</th> */}
                                     <th style={thStyle}>请求URI</th>
                                     <th style={thStyle}>是否得到配置</th>
                                     <th style={thStyle}>加密评分</th>
@@ -1763,7 +1939,8 @@ function MainPage() {
                                 {result.all.map((item, idx) => (
                                     <tr key={idx}>
                                         <td style={tdStyle}>{item.method}</td>
-                                        <td style={tdStyle}>{item.index}</td>
+                                        {/* 9.11 */}
+                                        {/* <td style={tdStyle}>{item.index}</td> */}
                                         <td style={{ ...tdStyle, maxWidth: "250px", overflow: "hidden" }}>
                                         <div
                                             style={{
@@ -1798,21 +1975,6 @@ function MainPage() {
                                         <td style={tdStyle}>{item.score?.encrypted_ports ?? "-"}</td>
                                         <td style={tdStyle}>{item.score?.standard_ports ?? "-"}</td>
                                         <td style={tdStyle}>{item.score?.overall ?? "-"}</td>
-                                        {/* <td style={tdStyle}>
-                                            {item.config && (
-                                                // <a
-                                                //     href={`/config-view?uri=${encodeURIComponent(item.uri)}&config=${btoa(encodeURIComponent(item.config))}&details=${btoa(JSON.stringify(connectDetails))}`}//&rawCerts=${btoa(JSON.stringify(certInfo?.RawCerts || []))}
-                                                //     target="_blank"
-                                                //     rel="noopener noreferrer"
-                                                //     style={{
-                                                //         color: "#3498db",
-                                                //         textDecoration: "underline"
-                                                //     }}
-                                                // >
-                                                //     查看
-                                                // </a>
-                                            )}
-                                        </td> */}
                                         <td style={tdStyle}>
                                             {item.config && (
                                                 <button
@@ -1910,6 +2072,7 @@ function MainPage() {
                             });
 
                             const hasDiff = Object.values(diffMap).some(v => v);
+                            result.hasInternalDiff = hasDiff; // ✅ 标记机制内部的差异性9.11
                             if (!hasDiff) return null;
 
                             return (
@@ -2113,27 +2276,22 @@ function MainPage() {
                             <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <tbody>
                                 <tr>
-                                {/* <td style={tdStyle}><strong>Service</strong></td> */}
                                 <td style={tdStyle}><strong>服务标签</strong></td>
                                 <td style={tdStyle}>{item.Service}</td>
                                 </tr>
                                 <tr>
-                                {/* <td style={tdStyle}><strong>Priority</strong></td> */}
                                 <td style={tdStyle}><strong>优先级</strong></td>
                                 <td style={tdStyle}>{item.Priority}</td>
                                 </tr>
                                 <tr>
-                                {/* <td style={tdStyle}><strong>Weight</strong></td> */}
                                 <td style={tdStyle}><strong>权重</strong></td>
                                 <td style={tdStyle}>{item.Weight}</td>
                                 </tr>
                                 <tr>
-                                {/* <td style={tdStyle}><strong>Port</strong></td> */}
                                 <td style={tdStyle}><strong>端口</strong></td>
                                 <td style={tdStyle}>{item.Port}</td>
                                 </tr>
                                 <tr>
-                                {/* <td style={tdStyle}><strong>Target</strong></td> */}
                                 <td style={tdStyle}><strong>邮件服务器</strong></td>
                                 <td style={tdStyle}>{item.Target}</td>
                                 </tr>
@@ -2253,101 +2411,6 @@ function MainPage() {
                     </>
                 )}
 
-                
-                {/* 连接详情跳转 */}
-                {/* {["srv", "guess"].map(type => (
-                    mech === type && result.score_detail?.actualconnect_details && (
-                        <button
-                            key={type}
-                            onClick={() => handleViewDetailsClick(type, result.score_detail.actualconnect_details)}
-                            style={viewButtonStyle}
-                        >
-                            查看连接详情({type.toUpperCase()})
-                        </button>
-                    )
-                ))} */}
-                
-                {/* {mech === "srv" && result.score_detail?.actualconnect_details && (
-                    <a
-                        href={`/config-view?uri=srv_records&config=${btoa("SRV_PLACEHOLDER")}&details=${btoa(JSON.stringify(result.score_detail.actualconnect_details))}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                            display: "inline-block",
-                            marginTop: "1rem",
-                            backgroundColor: "#27ae60",
-                            color: "white",
-                            padding: "10px 15px",
-                            textDecoration: "none",
-                            borderRadius: "4px"
-                        }}
-                    >
-                        查看连接详情(SRV)
-                    </a>
-                )} */}
-
-                {/* GUESS 连接详情跳转 */}
-                {/* {mech === "guess" && result.score_detail?.actualconnect_details && (
-                    <a
-                        href={`/config-view?uri=guess&config=${btoa("GUESS_PLACEHOLDER")}&details=${btoa(JSON.stringify(result.score_detail.actualconnect_details))}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                            display: "inline-block",
-                            marginTop: "1rem",
-                            backgroundColor: "#27ae60",
-                            color: "white",
-                            padding: "10px 15px",
-                            textDecoration: "none",
-                            borderRadius: "4px"
-                        }}
-                    >
-                        查看连接详情(GUESS)
-                    </a>
-                )} */}
-                {/* GUESS 连接详情跳转 */}
-                {/* {mech === "guess" && result.score_detail?.actualconnect_details && (
-                    <button
-                        onClick={async () => {
-                            try {
-                                const res = await fetch("http://localhost:8081/store-temp-data", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ details: result.score_detail.actualconnect_details }),
-                                });
-
-                                if (!res.ok) throw new Error("Failed to store data");
-
-                                const { id } = await res.json();
-                                const newTab = window.open(`/config-view?uri=guess_results&id=${id}`, "_blank");
-                                if (!newTab) alert("⚠️ 请允许浏览器弹出窗口。");
-                            } catch (err) {
-                                console.error("❌ Error storing GUESS detail:", err);
-                                alert("❌ 无法打开连接详情（GUESS）页面。");
-                            }
-                        }}
-                        style={{
-                            display: "inline-block",
-                            marginTop: "1rem",
-                            backgroundColor: "#27ae60",
-                            color: "white",
-                            padding: "10px 15px",
-                            textDecoration: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                        }}
-                    >
-                        查看连接详情(GUESS)
-                    </button>
-                )} */}
-
-
-                {/* 8.12 TODO只是初步猜测成功的结果，涉及邮件协议实际连接的可以通过上面的查看连接详情实现*/}
-                {/* {mech === "guess" && result.score_detail?.ports_usage?.map((item, idx) => (
-                    <div key={idx}>
-                        {item.host}:{item.port} 
-                    </div>
-                ))} */}
                 {mech === "guess" && result.score_detail?.ports_usage?.length > 0 && (
                 <div className="guess-result-card">
                     <h3>猜测到的可用邮件服务器</h3>
@@ -2379,12 +2442,6 @@ function MainPage() {
                         ))}
                     </tbody>
                     </table>
-                    {/* <button
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    onClick={() => navigate(`/connection-details?domain=${domain}`)}
-                    >
-                    查看连接详情
-                    </button> */}
                 </div>
                 )}
 
@@ -2400,26 +2457,6 @@ function MainPage() {
                         </button>
                     )
                 ))}
-
-
-                
-                {/* 7.28 {mech === "guess" && result.score_detail?.actualconnect_details && (
-                    <button
-                        onClick={() => handleGuessViewClick(result.score_detail.actualconnect_details)}
-                        style={{
-                            marginTop: "1rem",
-                            backgroundColor: "#27ae60",
-                            color: "white",
-                            padding: "10px 15px",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer"
-                        }}>
-                        查看连接详情(GUESS)
-                    </button>
-                )} */}
-
-
 
                 {/* 折叠主观分析 */}
                 {mech !== "guess" && (
